@@ -194,7 +194,7 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
         tag = 'develop'  # use develop branch by default
 
     commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
-    environment = '{0}-{0}'.format(PROJECT_NAME, site_name)  # project-env
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-env
 
     print colors.blue('deploying %s (%s) to %s on elasticbeanstalk') % (tag, commit[:8], environment)
     push_command = 'git aws.push -c %s --environment %s' % (commit, environment)
