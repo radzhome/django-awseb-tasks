@@ -33,7 +33,9 @@ Follow the instructions for eb tool, it is required for deploy command which use
 
 ### Add the package to your PYTHONPATH i.e. in  ../lib
 
-You can include it anywhere so long as its accessible
+You can include it anywhere so long as its accessible. Install it like so:
+
+    sudo pip install -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
 
 ### Reference it in your fabfile.py
 
