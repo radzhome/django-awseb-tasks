@@ -24,6 +24,11 @@ To use, first install and setup AWS Elastic Beanstalk command line tool (eb).
 * generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
 
 
+Feature Request
+------------------
+* Add ability to copy buckets
+* Add ability to send local media files to bucket
+
 
 Installation
 ------------------
