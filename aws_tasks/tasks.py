@@ -93,7 +93,6 @@ def update_local_data(site_name):
 
 def _get_tag_from_commit(commit):
     """ Returns the tag of a commit """
-    commit = 'e0e565f406310cd425bf28b4a9d8a142cbd8da10'
     if commit.startswith('git-'):
         last = commit.rfind("-")
         with hide('running', 'stdout', 'stderr'):
@@ -101,7 +100,6 @@ def _get_tag_from_commit(commit):
             result = local('git tag --points-at %s' % commit[4:last], capture=True)
         if result.succeeded:
             return '%s %s' % (colors.blue(result), commit[4:20])
-
     return commit
 
 
