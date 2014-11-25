@@ -2,7 +2,7 @@ AWS Release Tasks
 ===============
 
 
-Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.
+Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
 
 
 Usage
@@ -87,6 +87,10 @@ First set the required environment variables in your fab file, then import the t
     #    'web': [public_address for public_address, private_address in env.server_nodes['web'].values()],
     #}
 
+### S3 Storage
+
+See Usage.
+ 
 Assumptions
 ------------------
 
