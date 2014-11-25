@@ -90,18 +90,17 @@ def update_local_data(site_name):
 
 def _get_tag_from_commit(commit):
     """ Returns the tag of a commit """
+    commit = 'e0e565f406310cd425bf28b4a9d8a142cbd8da10'
     if commit.startswith('git-'):
+        last = commit.rfind("-")
         with hide('running', 'stdout', 'stderr'):
-            result = local('git tag --points-at %s' % commit[4:20], capture=True)
+            #result = local('git tag --points-at %s' % commit[4:20], capture=True)
+            result = local('git tag --points-at %s' % commit[4:last], capture=True)
         if result.succeeded:
             return '%s %s' % (colors.blue(result), commit[4:20])
 
     return commit
 
-# TODO: this is in kpmkhv, using the get tag from commit, why is this even used for ??
-# returns a malformed tag ??
-#rad-macbook:kpmkhv rwojcik$ git tag --points-at cf30f3d9947b9708
-#error: malformed object name 'cf30f3d9947b9708'
 
 def _get_instance_environment(instance):
     """ Used in _sorted_instances and list_instances to get required instance tags """
@@ -312,7 +311,7 @@ def memcached(cmd):
     print cmd
 
 @task
-def switch_credentials():
+def sw_creds():
     """ Allow for quickly switching the account files for AWS api using eb and boto"""
     # cp ~/.boto_PROJECT_NAME to ~/.boto
     # cp ~/.elasticbeanstalk/aws_credential_file ~/.elasticbeanstalk/aws_credential_file_PROJECT_NAME
