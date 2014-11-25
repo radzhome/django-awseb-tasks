@@ -197,7 +197,7 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     environment = '{0}-{0}'.format(PROJECT_NAME, site_name)  # project-env
 
     print colors.blue('deploying %s (%s) to %s on elasticbeanstalk') % (tag, commit[:8], environment)
-    push_command = 'git aws.push -c %s --environment %s' % (commit, environment)
+    push_command = 'git aws.push -c %s --environment %s' % (commit, environment) # aws.push cmd created by eb init
     local(push_command)
 
 
@@ -306,3 +306,28 @@ def memcached(cmd):
     cmd = 'if [ -z $CACHE_LOCATION ]; then echo "no memcached is used."; else echo $CACHE_LOCATION; %s; fi' % nc_cmd
     _run_cmd_in_python_container(cmd)
     print cmd
+
+@task
+def switch_credentials():
+    """ Allow for quickly switching the account files for AWS api using eb and boto"""
+    # TODO: fix
+    # cp ~/.boto_PROJECT_NAME to ~/.boto
+    # cp ~/.elasticbeanstalk/aws_credential_file ~/.elasticbeanstalk/aws_credential_file_PROJECT_NAME
+    # if the file does not exist, ask user for input and create the files, then copy
+    pass
+
+@task
+def generate_app_config():
+    """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
+    import shutil
+    import sys
+    config_path = os.path.join(os.getcwd(), '../../.ebextensions/')
+    config_file = os.path.join(config_path, '01_app.config')
+    shutil.copy(os.path.join(config_path, '01_app.config.ex'), config_file)
+    import fileinput
+
+    searchExp = '{{project}}'
+    for line in fileinput.input(file, inplace=True):
+        if searchExp in line:
+            line = line.replace(searchExp, PROJECT_NAME)
+        sys.stdout.write(line)
