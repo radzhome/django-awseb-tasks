@@ -345,6 +345,7 @@ def sw_creds():
         else:
             shutil.copy(project_boto_creds, master_boto_creds)
             shutil.copy(project_eb_creds, master_eb_creds)
+            #Set permissions if needed here
             print "Set {0} credentails as default".format(PROJECT_NAME)
     else:
         from fabric.api import env, prompt
@@ -356,8 +357,8 @@ def sw_creds():
                 project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, master_proj))
             shutil.copy(master_boto_creds, project_boto_creds)
             shutil.copy(master_eb_creds, project_eb_creds)
-            os.chmod(project_boto_creds, 600)
-            os.chmod(project_eb_creds, 600)
+            os.chmod(project_boto_creds, 0600)
+            os.chmod(project_eb_creds, 0600)
             print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
         else:
             print "No master files found in your home directory."
