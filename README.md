@@ -82,6 +82,7 @@ First set the required environment variables in your fab file, then import the t
     #    'web': [public_address for public_address, private_address in env.server_nodes['web'].values()],
     #}
 
-### Assumptions
+Assumptions
+------------------
 
-The project name is unique and the name of the project using the union django-template project structure is used.
+The project name is unique and the name of the project is derived via the union django-template project structure. To use in a different django project, how PROJECT_NAME is derived in the fabfile would change.
