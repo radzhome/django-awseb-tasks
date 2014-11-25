@@ -6,6 +6,9 @@ import datetime
 import itertools
 import os
 import re
+import fileinput
+import shutil
+import sys
 
 import boto
 import boto.beanstalk
@@ -134,7 +137,6 @@ def list_environments():
             datetime.datetime.utcfromtimestamp(environment['DateUpdated']).strftime('%Y-%m-%d %H:%M:%S'),
             _get_tag_from_commit(environment['VersionLabel']),
          ))
-
     print table
 
 
@@ -162,9 +164,7 @@ def list_instances(environment=None):
             _get_instance_environment(instance),
             instance.placement,
         ))
-
     print table
-
     rds = boto.rds2.connect_to_region(DEFAULT_REGION)
     db_instances = rds.describe_db_instances()['DescribeDBInstancesResponse']['DescribeDBInstancesResult']['DBInstances']
     print '\nRDS INSTANCES'
@@ -224,7 +224,6 @@ def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
     print 'dumping bucket', bucket_name
     if not isinstance(strip_prefix, bool):
         strip_prefix = (strip_prefix == 'True')
-
     try:
         s3 = boto.connect_s3()
         bucket = s3.get_bucket(bucket_name)
@@ -286,6 +285,7 @@ def instances(site_name):
     env.hosts = [instance.dns_name for instance in instances]
     print 'setting user+hosts: ec2-user@%s' % ','.join(env.hosts)
 
+
 def _run_cmd_in_python_container(command):
     """ Used by manage, to enable the correct virtual env and app env to run a command"""
     source_venv = 'source /opt/python/run/venv/bin/activate'
@@ -313,29 +313,13 @@ def memcached(cmd):
 @task
 def sw_creds():
     """ Allow for quickly switching the account files for AWS api using eb and boto"""
-    # cp ~/.boto_PROJECT_NAME to ~/.boto
-    # cp ~/.elasticbeanstalk/aws_credential_file ~/.elasticbeanstalk/aws_credential_file_PROJECT_NAME
-    # if the file does not exist, ask user for input and create the files, then copy
-
-    #TODO: Investigate permission denied errors
-    #    if filecmp.cmp(master_boto_creds, project_boto_creds) and \
-    #File "/usr/local/Cellar/python/2.7.8/Frameworks/Python.framework/Versions/2.7/lib/python2.7/filecmp.py", line 53, in cmp
-    #  outcome = _do_cmp(f1, f2)
-    ##File "/usr/local/Cellar/python/2.7.8/Frameworks/Python.framework/Versions/2.7/lib/python2.7/filecmp.py", line 66, in _do_cmp
-    #with open(f1, 'rb') as fp1, open(f2, 'rb') as fp2:
-    #IOError: [Errno 13] Permission denied: '/Users/rwojcik/.boto_bakersite'
-
-    from os.path import expanduser
-    import shutil
-    home_dir = expanduser("~")
+    home_dir = os.path.expanduser("~")
     master_boto_file = '.boto'
     master_boto_creds = os.path.join(home_dir, master_boto_file)
     master_eb_file = '.elasticbeanstalk/aws_credential_file'
     master_eb_creds = os.path.join(home_dir, master_eb_file)
-
     project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, PROJECT_NAME))
     project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, PROJECT_NAME))
-
     if os.path.exists(project_boto_creds) and os.path.exists(project_eb_creds) and \
         os.path.isfile(project_boto_creds) and os.path.isfile(project_eb_creds):  # files exist
         import filecmp
@@ -365,18 +349,14 @@ def sw_creds():
         print "Create current project files in {0} and {1} in correct format in your home directory " \
               "and try this command again to save the file.".format(master_boto_file, master_eb_file)
         return
-        #if master boto or master eb does not exist then ask for information, prompt
-        # TODO:else detect / ask what files the current belong to ? & copy...
-        # Get user input and use the correct format to create file, ask user to create manually
+        # TODO:else detect / ask what files the current belong to ? & copy...if master boto or master eb does not
+        # exist then ask for information, prompt . Get user input and use the correct format to create file, ask user to create manually
     print "Set credentail files done"
 
 
 @task
 def generate_app_config(): # generate_ebxconfig():
     """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
-    import fileinput
-    import shutil
-    import sys
     config_path = os.path.join(os.getcwd(), '../../.ebextensions/')
     config_file = os.path.join(config_path, '01_%s.config' % PROJECT_NAME)
     shutil.copy(os.path.join(config_path, '01_app.config.ex'), config_file)
