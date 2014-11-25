@@ -23,6 +23,11 @@ To use, first install and setup AWS Elastic Beanstalk command line tool (eb).
 * sw_creds - switch credential files for boto and eb if they exist in your home dir. Quickly switch accounts i.e kct and baker
 * generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
 
+### Using the S3 backend for media and static (requires storages install). Add this to your settings file:
+
+    DEFAULT_FILE_STORAGE = 'aws_tasks.storage_backends.MediaS3Storage'
+    STATICFILES_STORAGE = 'aws_tasks.storage_backends.StaticS3Storage'
+    THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
 
 Feature Request
 ------------------
