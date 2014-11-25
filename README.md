@@ -20,6 +20,8 @@ To use, first install and setup AWS Elastic Beanstalk command line tool (eb).
 * deploy - Deploy a release to the specified AWS Elastic Beanstalk environment. Requires site name & tag (release)
 * dump_bucket - Downloads an S3 Bucket, given the bucket name
 * manage - Run a manage command remotely, need host that you can get from leader command. use appropriate cert
+* sw_creds - switch credential files for boto and eb if they exist in your home dir. Quickly switch accounts i.e kct and baker
+* generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
 
 
 
@@ -78,5 +80,3 @@ First set the required environment variables in your fab file, then import the t
 ### Assumptions
 
 The project name is unique and the name of the project using the union django-template project structure is used.
-
-
