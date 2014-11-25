@@ -314,11 +314,62 @@ def memcached(cmd):
 @task
 def switch_credentials():
     """ Allow for quickly switching the account files for AWS api using eb and boto"""
-    # TODO: fix
     # cp ~/.boto_PROJECT_NAME to ~/.boto
     # cp ~/.elasticbeanstalk/aws_credential_file ~/.elasticbeanstalk/aws_credential_file_PROJECT_NAME
     # if the file does not exist, ask user for input and create the files, then copy
-    pass
+
+    #TODO: Investigate permission denied errors
+    #    if filecmp.cmp(master_boto_creds, project_boto_creds) and \
+    #File "/usr/local/Cellar/python/2.7.8/Frameworks/Python.framework/Versions/2.7/lib/python2.7/filecmp.py", line 53, in cmp
+    #  outcome = _do_cmp(f1, f2)
+    ##File "/usr/local/Cellar/python/2.7.8/Frameworks/Python.framework/Versions/2.7/lib/python2.7/filecmp.py", line 66, in _do_cmp
+    #with open(f1, 'rb') as fp1, open(f2, 'rb') as fp2:
+    #IOError: [Errno 13] Permission denied: '/Users/rwojcik/.boto_bakersite'
+
+    from os.path import expanduser
+    import shutil
+    home_dir = expanduser("~")
+    master_boto_file = '.boto'
+    master_boto_creds = os.path.join(home_dir, master_boto_file)
+    master_eb_file = '.elasticbeanstalk/aws_credential_file'
+    master_eb_creds = os.path.join(home_dir, master_eb_file)
+
+    project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, PROJECT_NAME))
+    project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, PROJECT_NAME))
+
+    if os.path.exists(project_boto_creds) and os.path.exists(project_eb_creds) and \
+        os.path.isfile(project_boto_creds) and os.path.isfile(project_eb_creds):  # files exist
+        import filecmp
+        if filecmp.cmp(master_boto_creds, project_boto_creds) and \
+            filecmp.cmp(master_eb_creds, project_eb_creds):  # correct file is currently set
+            print "Correct credentaisl already set."
+        else:
+            shutil.copy(project_boto_creds, master_boto_creds)
+            shutil.copy(project_eb_creds, master_eb_creds)
+            print "Set {0} credentails as default".format(PROJECT_NAME)
+    else:
+        from fabric.api import env, prompt
+        if os.path.exists(master_boto_creds) and os.path.exists(master_eb_creds) and \
+            os.path.isfile(master_boto_creds) and os.path.isfile(master_eb_creds):
+            master_proj = prompt('What project are the current files for? (Blank for {0}): '.format(PROJECT_NAME))
+            if master_proj:
+                project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, master_proj))
+                project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, master_proj))
+            shutil.copy(master_boto_creds, project_boto_creds)
+            shutil.copy(master_eb_creds, project_eb_creds)
+            os.chmod(project_boto_creds, 600)
+            os.chmod(project_eb_creds, 600)
+            print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
+        else:
+            print "No master files found in your home directory."
+        print "Create current project files in {0} and {1} in correct format in your home directory " \
+              "and try this command again to save the file.".format(master_boto_file, master_eb_file)
+        return
+        #if master boto or master eb does not exist then ask for information, prompt
+        # TODO:else detect / ask what files the current belong to ? & copy...
+        # Get user input and use the correct format to create file, ask user to create manually
+    print "Set credentail files done"
+
 
 @task
 def generate_app_config(): # generate_ebxconfig():
