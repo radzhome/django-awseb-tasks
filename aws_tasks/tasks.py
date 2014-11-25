@@ -98,6 +98,10 @@ def _get_tag_from_commit(commit):
 
     return commit
 
+# TODO: this is in kpmkhv, using the get tag from commit, why is this even used for ??
+# returns a malformed tag ??
+#rad-macbook:kpmkhv rwojcik$ git tag --points-at cf30f3d9947b9708
+#error: malformed object name 'cf30f3d9947b9708'
 
 def _get_instance_environment(instance):
     """ Used in _sorted_instances and list_instances to get required instance tags """
@@ -317,17 +321,17 @@ def switch_credentials():
     pass
 
 @task
-def generate_app_config():
+def generate_app_config(): # generate_ebxconfig():
     """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
+    import fileinput
     import shutil
     import sys
     config_path = os.path.join(os.getcwd(), '../../.ebextensions/')
-    config_file = os.path.join(config_path, '01_app.config')
+    config_file = os.path.join(config_path, '01_%s.config' % PROJECT_NAME)
     shutil.copy(os.path.join(config_path, '01_app.config.ex'), config_file)
-    import fileinput
-
-    searchExp = '{{project}}'
-    for line in fileinput.input(file, inplace=True):
+    searchExp = '{{project}}'  # replaces project name in the file
+    for line in fileinput.input(config_file, inplace=True):
         if searchExp in line:
             line = line.replace(searchExp, PROJECT_NAME)
         sys.stdout.write(line)
+    print "Done creating %s" % config_file
