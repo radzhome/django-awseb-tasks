@@ -341,7 +341,8 @@ def sw_creds():
             shutil.copy(master_eb_creds, project_eb_creds)
             os.chmod(project_boto_creds, 0600)
             os.chmod(project_eb_creds, 0600)
-            print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
+            if master_proj == PROJECT_NAME:
+                print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
         else:
             print "No master files found in your home directory."
         print "Create current project files in {0} and {1} in correct format in your home directory " \
