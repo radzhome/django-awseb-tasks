@@ -2,7 +2,7 @@ AWS Release Tasks
 ===============
 
 
-Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.
+Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
 
 
 Usage
@@ -20,7 +20,19 @@ To use, first install and setup AWS Elastic Beanstalk command line tool (eb).
 * deploy - Deploy a release to the specified AWS Elastic Beanstalk environment. Requires site name & tag (release)
 * dump_bucket - Downloads an S3 Bucket, given the bucket name
 * manage - Run a manage command remotely, need host that you can get from leader command. use appropriate cert
+* sw_creds - switch credential files for boto and eb if they exist in your home dir. Quickly switch accounts i.e kct and baker
+* generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
 
+### Using the S3 backend for media and static (requires storages install). Add this to your settings file:
+
+    DEFAULT_FILE_STORAGE = 'aws_tasks.storage_backends.MediaS3Storage'
+    STATICFILES_STORAGE = 'aws_tasks.storage_backends.StaticS3Storage'
+    THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
+
+Feature Request
+------------------
+* Add ability to copy buckets
+* Add ability to send local media files to bucket
 
 
 Installation
@@ -29,14 +41,14 @@ Installation
 
 ### Setup eb tool and run eb init in your repository root
 
-Follow the instructions for eb tool, it is required for deploy command which uses aws.push
+Follow the instructions for eb cli tool, it is required for deploy command which uses aws.push and aws.config. 
 
 ### Add the package to your PYTHONPATH i.e. in  ../lib
 
-You can include it anywhere so long as its accessible. Install it like so:
+You can include it anywhere so long as its accessible
 
-    sudo pip install -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
-
+    cd ../lib
+    sudo pip install --target . -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
 ### Reference it in your fabfile.py
 
 First set the required environment variables in your fab file, then import the tasks
@@ -77,8 +89,11 @@ First set the required environment variables in your fab file, then import the t
     #    'web': [public_address for public_address, private_address in env.server_nodes['web'].values()],
     #}
 
-### Assumptions
+### S3 Storage
 
-The project name is unique and the name of the project using the union django-template project structure is used.
+See Usage.
+ 
+Assumptions
+------------------
 
-
+The project name is unique and the name of the project is derived via the union django-template project structure. To use in a different django project, how PROJECT_NAME is derived in the fabfile would change.
