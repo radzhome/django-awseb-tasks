@@ -48,7 +48,7 @@ Follow the instructions for eb cli tool, it is required for deploy command which
 You can include it anywhere so long as its accessible
 
     cd ../lib
-    sudo pip install --target . -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
+    pip install --target . -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
 ### Reference it in your fabfile.py
 
 First set the required environment variables in your fab file, then import the tasks
