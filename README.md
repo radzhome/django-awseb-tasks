@@ -38,6 +38,7 @@ Feature Request
 Installation
 ------------------
 
+Please ensure the version of git you are using includes the points-at command, git 1.8+
 
 ### Setup eb tool and run eb init in your repository root
 
