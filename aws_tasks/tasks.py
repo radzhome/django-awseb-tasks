@@ -233,6 +233,7 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     if not tag:
         tag = 'develop'  # use develop branch by default
 
+    local('git pull')  # pull to ensure tag is there
     commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
     environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-env
 
