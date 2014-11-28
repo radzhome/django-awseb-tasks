@@ -50,6 +50,7 @@ INSTANCE_STATE_FNS = {
 
 
 #Defines the S3 Buckets based on the project name and the environment
+#Problem, bucket names are unique, TODO: Make it something like unionteam-projectname-qa
 S3_BUCKETS = {
     'staging': '%s-staging' % os.environ['PROJECT_NAME'],
     'live': '%s' % os.environ['PROJECT_NAME'],
@@ -59,10 +60,13 @@ S3_BUCKETS = {
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging'),
+               #('user_name', 'e.g. trapeze, unionteam'), # TODO: user change for new projects
+               )
 def dump_db(site_name):
     """ Dumps remote db to local dev data folder for use with load_devdata"""
-    dump_cmd = 'pg_dump -h {host} -U trapeze {project}_{site} > ../../devdata/dump.sql'
+    #dump_cmd = 'pg_dump -h {host} -U trapeze {project}_{site} > ../../devdata/dump.sql'
+    dump_cmd = 'pg_dump -h {host} {project}_{site} > ../../devdata/dump.sql'
     local(dump_cmd.format(host=DB_HOST, project=PROJECT_NAME, site=site_name))
     print 'dumped ../../devdata/dump.sql'
 
@@ -88,11 +92,40 @@ def update_local_data(site_name):
     dump_media(site_name)
 
 
+@task
+@args_required(('site_name', 'e.g. live, staging'), )
+def create_bucket(site_name):
+    """ Creates a bucket for the project/env """
+    bucket_name = '%s-%s' % (site_name, PROJECT_NAME)
+    print 'Trying to create bucket %s' % bucket_name
+    try:
+        s3 = boto.connect_s3()
+        s3.create_bucket(bucket_name)
+        from boto.s3.cors import CORSConfiguration
+        cors_cfg = CORSConfiguration()
+        #cors_cfg.add_rule(['PUT', 'POST', 'DELETE'], 'https://www.example.com', allowed_header='*', max_age_seconds=3000, expose_header='x-amz-server-side-encryption')
+        cors_cfg.add_rule('GET', '*')
+        bucket = s3.lookup(bucket_name)
+        bucket.set_cors(cors_cfg)
+    except boto.exception.S3CreateError:
+        print 'AWS returned 409 Conflict. Does the bucket already exist?'
+
+
+
+#TODO: Copy bucket?, rm bucket conn.delete_bucket()
+@task
+@args_required(('site_name', 'e.g. live, staging'), )
+def media_to_bucket(): #ollect_media():
+    """ Send local media to the env bucket """
+    pass
+
+
+
 ###################################### END OF tasks that were in Fabfile.py
 
 
 def _get_tag_from_commit(commit):
-    """ Returns the tag of a commit """
+    """ Returns the tag of a commit """  # TODO: Try and get rid of dependency on points-at
     if commit.startswith('git-'):
         last = commit.rfind("-")
         with hide('running', 'stdout', 'stderr'):
@@ -136,6 +169,11 @@ def list_environments():
             _get_tag_from_commit(environment['VersionLabel']),
          ))
     print table
+
+
+@task
+def status():
+    return list_environments()
 
 
 @task
@@ -184,7 +222,8 @@ def list_instances(environment=None):
 @task
 @args_required(
     ('site_name', 'e.g. live, staging'),
-    ('tag', 'e.g. boulanger-0.0.1ALPHA, blank for develop'),
+    #('tag', 'e.g. projectname-0.0.1ALPHA, blank for develop'),
+    ('tag', 'e.g. {0}-0.0.1ALPHA, blank for develop'.format(PROJECT_NAME)),
 )
 def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     """
@@ -229,7 +268,6 @@ def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
             name = file.name
             if strip_prefix:
                 name = re.sub(r'^%s' % prefix, '', name)
-
             outfile = os.path.abspath(os.path.join(out_path, name))
             outdir = os.path.dirname(outfile)
             if not os.path.exists(outdir):
@@ -238,7 +276,7 @@ def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
                 print outfile
                 file.get_contents_to_filename(outfile)
     except boto.exception.S3ResponseError:
-        print 'AWS returned Permission Denied. Is the time correct on your VM?'
+        print 'AWS returned Permission Denied. Is the time correct on your local?'
 
 
 def _filter_asg(site_name):
@@ -341,7 +379,7 @@ def sw_creds():
             shutil.copy(master_eb_creds, project_eb_creds)
             os.chmod(project_boto_creds, 0600)
             os.chmod(project_eb_creds, 0600)
-            if master_proj == PROJECT_NAME:
+            if master_proj and master_proj != PROJECT_NAME:
                 print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
         else:
             print "No master files found in your home directory."
@@ -365,3 +403,5 @@ def generate_app_config(): # generate_ebxconfig():
             line = line.replace(searchExp, PROJECT_NAME)
         sys.stdout.write(line)
     print "Done creating %s" % config_file
+
+
