@@ -4,6 +4,9 @@ AWS Release Tasks
 
 Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
 
+Known Issues
+-----
+* can't get correct leader using aws.leader, can't use aws.manage b/c path is wrong
 
 Usage
 -----
