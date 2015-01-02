@@ -16,7 +16,13 @@ class StaticS3Storage(S3BotoStorage):
         # being weird (the backend was thinking the local files were out of date
         # compared to the stale ones on S3)
         raise NotImplementedError
-
+        
+    def url(self, name):
+        # Fix for django error abusing {% static %}
+        url = super(StaticS3Storage, self).url(name)
+        if name.endswith('/') and not url.endswith('/'):
+            url += '/'
+        return url
 
 class MediaS3Storage(S3BotoStorage):
     location = 'media'
