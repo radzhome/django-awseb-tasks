@@ -287,7 +287,7 @@ def _get_instances_for_site(site_name):
     for res in reservations:
         for inst in res.instances:
             environment = inst.tags.get('elasticbeanstalk:environment-name', '')  # same as 'Name'
-            if environment == '{}-{}'.format(PROJECT_NAME, site_name):
+            if environment == '{}-{}'.format(PROJECT_NAME, site_name) and inst.state == 'running':
                 site_instances.append(inst)
     site_instances.sort()
     return site_instances
