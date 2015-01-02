@@ -4,20 +4,18 @@ AWS Release Tasks
 
 Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
 
-Known Issues
------
-* can't get correct leader using aws.leader, can't use aws.manage b/c path is wrong
 
 Usage
 -----
 
-To use, first install and setup AWS Elastic Beanstalk command line tool (eb).
+To use, first install and setup AWS Elastic Beanstalk command line tool (eb) and boto. Use the latest version of EB CLI available here: https://github.com/radlws/AWS-ElasticBeanstalk-CLI
 
 
 ### Available commands
 
 * list_environments  - Shows all available environments
-* instances - Returns ssh connection string to available instance
+* status - runs list_environments
+* instances - Returns SSH connection string to available instance
 * leader - Returns ssh connection string to leader instance
 * list_instances - Shows all instances for an environment
 * deploy - Deploy a release to the specified AWS Elastic Beanstalk environment. Requires site name & tag (release)
