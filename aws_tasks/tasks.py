@@ -280,35 +280,26 @@ def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
         print 'AWS returned Permission Denied. Is the time correct on your local?'
 
 
-def _filter_asg(site_name):
-    def filt(group):
-        tags = dict([(tag.key, tag.value) for tag in group.tags])
-        environment = tags.get('elasticbeanstalk:environment-name', '')
-        return environment == '{0}-{0}'.format(PROJECT_NAME, site_name)
-    return filt
-
-
 def _get_instances_for_site(site_name):
-    conn = boto.ec2.autoscale.connect_to_region(DEFAULT_REGION)
-    groups = filter(_filter_asg(site_name), conn.get_all_groups())
-    instances = []
-    for group in groups:
-        instances.extend(instance.instance_id for instance in group.instances if instance.lifecycle_state == 'InService')
-
-    instances.sort()
-
-    ec2 = boto.ec2.connect_to_region(DEFAULT_REGION)
-    return ec2.get_only_instances(instance_ids=instances)
+    conn = boto.ec2.connect_to_region(DEFAULT_REGION)
+    site_instances = []
+    reservations = conn.get_all_instances()
+    for res in reservations:
+        for inst in res.instances:
+            environment = inst.tags.get('elasticbeanstalk:environment-name', '')  # same as 'Name'
+            if environment == '{}-{}'.format(PROJECT_NAME, site_name):
+                site_instances.append(inst)
+    site_instances.sort()
+    return site_instances
 
 
 @task
 @args_required(('site_name', 'e.g. live, staging'), )
 def leader(site_name):
     """ Returns ssh connection string to leader instance """
-    instances = _get_instances_for_site(site_name)
-    leader = instances[0].dns_name
-
-    print 'setting user+host: ec2-user@%s' % leader
+    insts = _get_instances_for_site(site_name)
+    lead = insts[0].dns_name
+    print 'setting user+host: ec2-user@%s' % lead
     env.user = 'ec2-user'
     env.hosts = [leader]
 
@@ -319,8 +310,8 @@ def instances(site_name):
     """ Returns ssh connection string to available instance """
     instances = _get_instances_for_site(site_name)
     env.user = 'ec2-user'
-    env.hosts = [instance.dns_name for instance in instances]
-    print 'setting user+hosts: ec2-user@%s' % ','.join(env.hosts)
+    env.hosts = ["ec2-user@%s" % instance.dns_name for instance in instances]
+    print 'setting user+hosts: %s' % ','.join(env.hosts)
 
 
 def _run_cmd_in_python_container(command):
