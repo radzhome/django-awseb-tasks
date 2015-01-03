@@ -2,8 +2,5 @@
 *.pyc
 *.egg-info
 build
-node_modules
-npm-debug.log
 tmp
-/.idea/
 .idea/

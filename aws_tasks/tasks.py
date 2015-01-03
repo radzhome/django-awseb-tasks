@@ -46,8 +46,6 @@ INSTANCE_STATE_FNS = {
     'shutting-down': colors.yellow,
 }
 
-######################## From Fabfile.py, moved here
-
 
 #Defines the S3 Buckets based on the project name and the environment
 #Problem, bucket names are unique, TODO: Make it something like unionteam-projectname-qa
@@ -120,16 +118,11 @@ def media_to_bucket(): #ollect_media():
     pass
 
 
-
-###################################### END OF tasks that were in Fabfile.py
-
-
 def _get_tag_from_commit(commit):
     """ Returns the tag of a commit """  # TODO: Try and get rid of dependency on points-at
     if commit.startswith('git-'):
         last = commit.rfind("-")
         with hide('running', 'stdout', 'stderr'):
-            #result = local('git tag --points-at %s' % commit[4:20], capture=True)
             result = local('git tag --points-at %s' % commit[4:last], capture=True)
         if result.succeeded:
             return '%s %s' % (colors.blue(result), commit[4:20])
@@ -222,7 +215,6 @@ def list_instances(environment=None):
 @task
 @args_required(
     ('site_name', 'e.g. live, staging'),
-    #('tag', 'e.g. projectname-0.0.1ALPHA, blank for develop'),
     ('tag', 'e.g. {0}-0.0.1ALPHA, blank for develop'.format(PROJECT_NAME)),
 )
 def deploy(site_name, tag=None):  # The environment must exist, as must the tag
@@ -230,15 +222,20 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     Deploy a release to the specified AWS Elastic Beanstalk environment.
     """
 
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-env
+
+    # Will raise an error if can't connect to environment
+    beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
+    beanstalk.describe_environment_resources(environment_name=environment)
+
     if not tag:
         tag = 'develop'  # use develop branch by default
 
     local('git pull')  # pull to ensure tag is there
     commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
-    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-env
 
     print colors.blue('deploying %s (%s) to %s on elasticbeanstalk') % (tag, commit[:8], environment)
-    push_command = 'git aws.push -c %s --environment %s' % (commit, environment) # aws.push cmd created by eb init
+    push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
     local(push_command)
 
 
@@ -380,12 +377,13 @@ def sw_creds():
         return
         # TODO:else detect / ask what files the current belong to ? & copy...if master boto or master eb does not
         # exist then ask for information, prompt . Get user input and use the correct format to create file, ask user to create manually
-    print "Set credentail files done"
+    print "Set credential files done"
 
 
 @task
 def generate_app_config(): # generate_ebxconfig():
     """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
+    #TODO: Should prolly move config, next time around if try, say already was done
     config_path = os.path.join(os.getcwd(), '../../.ebextensions/')
     config_file = os.path.join(config_path, '01_%s.config' % PROJECT_NAME)
     shutil.copy(os.path.join(config_path, '01_app.config.ex'), config_file)
