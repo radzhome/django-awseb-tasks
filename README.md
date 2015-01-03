@@ -4,6 +4,11 @@ AWS Release Tasks
 
 Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
 
+TODO
+-----
+- on aws deploy, check if environment provided is valid
+- num_cb , adjust to be more responsive on upload
+- at end of upload, query the environment till goes green but let user exit
 
 Usage
 -----
