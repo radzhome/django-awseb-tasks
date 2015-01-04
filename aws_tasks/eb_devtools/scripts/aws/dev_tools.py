@@ -128,7 +128,7 @@ class DevTools:
                 tag = '-' + tag
             epoch = int(time.time() * 1000)
             commit_id = self.commit_id(commit)
-            label = "git-{0}{1}".format(commit_id, epoch, tag)
+            label = "git-{0}{1} {2}".format(commit_id, epoch, tag)
 
         return label
 
