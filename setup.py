@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 setup(
     name='aws-fabric-tasks',
     packages=find_packages(exclude=['example']),
-    install_requires=['prettytable', 'boto>=2.9.0', ],
+    install_requires=['prettytable', 'boto>=2.9.0', ],   # 'django-storages', ], OPTIONAL
     #install_requires=['prettytable', 'boto>=2.9.0', 'fabric>=1.5.0', ], fab shoud be globally installed
     include_package_data=True,
     version='0.0.1',

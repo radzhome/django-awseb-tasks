@@ -7,7 +7,7 @@ if [ -z "$GIT_DIRECTORY" ]; then GIT_DIRECTORY=.git; fi
 
 rm -rf $GIT_DIRECTORY/AWSDevTools
 cp -r "$SCRIPTDIR"/scripts $GIT_DIRECTORY/AWSDevTools
-echo $SCRIPTDIR
+
 git config alias.aws.elasticbeanstalk.remote "!$GIT_DIRECTORY/AWSDevTools/aws.elasticbeanstalk.push --remote-url"
 git config aws.endpoint.us-east-1 git.elasticbeanstalk.us-east-1.amazonaws.com
 git config aws.endpoint.ap-northeast-1 git.elasticbeanstalk.ap-northeast-1.amazonaws.com
