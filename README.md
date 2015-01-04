@@ -2,19 +2,24 @@ AWS Release Tasks
 ===============
 
 
-Wrapper helper commands to use with AWS Beanstalk.  Uses fabric, prettytable and boto.  Also includes utilities for setting up your static and media backend for use in S3.
+Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  Dependencies include git, fabric, prettytable and boto.  Optional dependency is django-storages, package includes utilities for setting up your static and media backend for use in S3.
 
 TODO
 -----
-- on aws deploy, check if environment provided is valid
-- num_cb , adjust to be more responsive on upload
 - at end of upload, query the environment till goes green but let user exit
+
+Feature Request
+------------------
+* Add ability to copy buckets
+* Add ability to send local media files to bucket
+*
+History
+-----
+
+The tool required  AWS Elastic Beanstalk command line tool (eb) and boto. It is now its own separate tool. The original tool it relied on is here:  https://github.com/radlws/AWS-ElasticBeanstalk-CLI
 
 Usage
 -----
-
-To use, first install and setup AWS Elastic Beanstalk command line tool (eb) and boto. Use the latest version of EB CLI available here: https://github.com/radlws/AWS-ElasticBeanstalk-CLI
-
 
 ### Available commands
 
@@ -28,17 +33,13 @@ To use, first install and setup AWS Elastic Beanstalk command line tool (eb) and
 * manage - Run a manage command remotely, need host that you can get from leader command. use appropriate cert
 * sw_creds - switch credential files for boto and eb if they exist in your home dir. Quickly switch accounts i.e kct and baker
 * generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
+* eb_init - creats aws.push and aws.config commands used by deploy
 
-### Using the S3 backend for media and static (requires storages install). Add this to your settings file:
+### (OPTIONAL) Using the S3 backend for media and static (requires storages install). Add this to your settings file:
 
     DEFAULT_FILE_STORAGE = 'aws_tasks.storage_backends.MediaS3Storage'
     STATICFILES_STORAGE = 'aws_tasks.storage_backends.StaticS3Storage'
     THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
-
-Feature Request
-------------------
-* Add ability to copy buckets
-* Add ability to send local media files to bucket
 
 
 Installation
@@ -46,16 +47,13 @@ Installation
 
 Please ensure the version of git you are using includes the points-at command, git 1.8+
 
-### Setup eb tool and run eb init in your repository root
-
-Follow the instructions for eb cli tool, it is required for deploy command which uses aws.push and aws.config. 
-
 ### Add the package to your PYTHONPATH i.e. in  ../lib
 
 You can include it anywhere so long as its accessible
 
     cd ../lib
     pip install --target . -U git+https://<username>@bitbucket.org/trapeze/aws-release-tasks.git
+
 ### Reference it in your fabfile.py
 
 First set the required environment variables in your fab file, then import the tasks
@@ -65,8 +63,6 @@ First set the required environment variables in your fab file, then import the t
     os.environ['PROJECT_NAME'] = os.getcwd().split('/')[-1]  # Import before aws_tasks, as it is used there.
     os.environ['DEFAULT_REGION'] = 'us-east-1'
     os.environ['DB_HOST'] = 'prod.your-db-url.us-east-1.rds.amazonaws.com'  # RDS DB URL, update accordingly']
-
-    #import tasks
     from aws_tasks import tasks as aws
 
 
@@ -75,26 +71,12 @@ First set the required environment variables in your fab file, then import the t
     import os
 
     from fabric.api import task, local
-    from boulanger.fabfile import release_notes
-
+    #env.project_name = os.getcwd().split('/')[-1]
     os.environ['PROJECT_NAME'] = os.getcwd().split('/')[-1]  # Import before aws_tasks, as it is used there.
     os.environ['DEFAULT_REGION'] = 'us-east-1'
     os.environ['DB_HOST'] = 'prod.czxygluip2xt.us-east-1.rds.amazonaws.com'  # RDS DB URL, update accordingly']
     from aws_tasks import tasks as aws
 
-    # UNCOMMENT BELOW for fab local_setup to work
-    # This is required for local_setup but it is not required for hosting because Beanstalk is used. Below is boulanger/fab specific
-    #from boulanger.fabfile import *   # UNCOMMENT for local_setup to work
-    #env.server_nodes = {
-    #    'web': {
-    #        'web1': ('localhost', ''),
-    #    },
-    #}
-    #env.project_name = os.getcwd().split('/')[-1]
-    #env.user = env.project_name + 'team'
-    #env.roledefs = {
-    #    'web': [public_address for public_address, private_address in env.server_nodes['web'].values()],
-    #}
 
 ### S3 Storage
 
