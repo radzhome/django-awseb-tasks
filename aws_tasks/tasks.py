@@ -395,3 +395,33 @@ def generate_app_config(): # generate_ebxconfig():
     print "Done creating %s" % config_file
 
 
+@task
+def eb_init():  # The environment must exist, as must the tag
+    """
+    Initiate eb tools copy to .git of repo
+    """
+    sh_path = os.path.join(os.path.realpath(os.path.dirname(__file__)),
+                       'eb_devtools/AWSDevTools-RepositorySetup.sh')
+    local('bash ' + sh_path)  # Run shell script that creates git aliases
+
+# TODO: create the yaml file for config, where is it needed though?
+EB_CONFIG_TEMPLATE = u"""branch-defaults:
+  develop:
+    environment: kct-staging
+  master:
+    environment: kct-live
+global:
+  application_name: kct
+  default_ec2_keyname: union
+  default_platform: Python 2.7
+  default_region: us-east-1
+  profile: eb-cli
+  sc: git
+"""
+
+
+# TODO: Eb logs
+
+# TODO: Eb restart / update env
+
+# TODO: Eb load /save / export env settings i.e. env vars etc..
