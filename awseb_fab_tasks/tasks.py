@@ -347,18 +347,32 @@ def memcached(cmd):
 def _get_project_boto_creds():
     return os.path.join(os.path.expanduser("~"), '{0}_{1}'.format('.boto', PROJECT_NAME))
 
+
+def _get_master_boto_creds():
+    return os.path.join(os.path.expanduser("~"), '.boto',)
+
+
+def _copy_if_no_exists(project_boto_creds, master_boto_creds):
+    """
+    Copy the file if it isn't already there
+    """
+    if not os.path.exists(master_boto_creds):
+        shutil.copy(project_boto_creds, master_boto_creds)
+    os.chmod(project_boto_creds, 0600)
+
 @task
 def new_creds():
 
     # Check if creds exist, ask if overwrite if they do
     project_boto_creds = _get_project_boto_creds()
+    master_boto_creds = _get_master_boto_creds()
 
     if os.path.exists(project_boto_creds):
         overwrite = prompt('Credentials file already exists for {}. Overwrite it (Y/N)?: '.format(PROJECT_NAME))
         if overwrite.lower() == 'y':
             os.remove(project_boto_creds)
         else:
-            return
+            return _copy_if_no_exists(project_boto_creds, master_boto_creds)
 
     with open(os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools', 'scripts', 'aws.credentials_format.txt')) as f:
         credential_format = f.read().replace('<', '{').replace('>', '}')
@@ -373,14 +387,13 @@ def new_creds():
 
     with open(project_boto_creds, 'w') as f:
         f.write(new_creds)
-    #chmod 600 boto project creds
     os.chmod(project_boto_creds, 0600)
+    _copy_if_no_exists(project_boto_creds, master_boto_creds)
+
     print "Credentials file created."
 
     # Automatically switch to the creds for this project
     sw_creds()
-
-    #return new_creds
 
 @task
 def sw_creds():
@@ -390,7 +403,7 @@ def sw_creds():
     """
     home_dir = os.path.expanduser("~")
     master_boto_file = '.boto'
-    master_boto_creds = os.path.join(home_dir, master_boto_file)
+    master_boto_creds = _get_master_boto_creds()
     project_boto_creds = _get_project_boto_creds()
 
     if os.path.exists(project_boto_creds) and os.path.isfile(project_boto_creds):  # files exist
@@ -475,7 +488,7 @@ def eb_init():  # The environment must exist, as must the tag
 
     sh_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/AWSDevTools-RepositorySetup.sh')
     local('bash ' + sh_path)  # Run shell script that creates git aliases
-    local('git aws.config')
+    #local('git aws.config') # No need for now, asks for key again
 
 # TODO: create the yaml file for config, where is it needed though?
 
