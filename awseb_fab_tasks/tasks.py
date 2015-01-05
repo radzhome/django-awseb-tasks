@@ -17,7 +17,7 @@ import boto.ec2.autoscale
 import boto.exception
 import boto.rds2
 from fabric import colors
-from fabric.api import env, task, run, settings
+from fabric.api import env, task, run, prompt #, settings
 from fabric.operations import local
 from fabric.context_managers import hide, cd
 import prettytable
@@ -338,6 +338,45 @@ def memcached(cmd):
     _run_cmd_in_python_container(cmd)
     print cmd
 
+
+def _get_project_boto_creds():
+    return os.path.join(os.path.expanduser("~"), '{0}_{1}'.format('.boto', PROJECT_NAME))
+
+@task
+def new_creds():
+
+    # Check if creds exist, ask if overwrite if they do
+    project_boto_creds = _get_project_boto_creds()
+
+    if os.path.exists(project_boto_creds):
+        overwrite = prompt('Credentials file already exists for {}. Overwrite it (Y/N)?: '.format(PROJECT_NAME))
+        if overwrite.lower() == 'y':
+            os.remove(project_boto_creds)
+        else:
+            return
+
+    with open(os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools', 'scripts', 'aws.credentials_format.txt')) as f:
+        credential_format = f.read().replace('<', '{').replace('>', '}')
+
+    aws_access_key = prompt('Please provide the AWS_ACCESS_KEY for {}: '.format(PROJECT_NAME))
+    aws_secret_key = prompt('Please provide the AWS_SECRET_KEY for {}: '.format(PROJECT_NAME))
+
+    new_creds = credential_format.format(
+        YOUR_AWS_ACCESS_KEY_ID=aws_access_key,
+        YOUR_AWS_SECRET_ACCESS_KEY=aws_secret_key,
+    )
+
+    with open(project_boto_creds, 'w') as f:
+        f.write(new_creds)
+    #chmod 600 boto project creds
+    os.chmod(project_boto_creds, 0600)
+    print "Credentials file created."
+
+    # Automatically switch to the creds for this project
+    sw_creds()
+
+    #return new_creds
+
 @task
 def sw_creds():
     """
@@ -347,19 +386,18 @@ def sw_creds():
     home_dir = os.path.expanduser("~")
     master_boto_file = '.boto'
     master_boto_creds = os.path.join(home_dir, master_boto_file)
-
-    project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, PROJECT_NAME))
+    project_boto_creds = _get_project_boto_creds()
 
     if os.path.exists(project_boto_creds) and os.path.isfile(project_boto_creds):  # files exist
         import filecmp
         if filecmp.cmp(master_boto_creds, project_boto_creds):  # correct file is currently set
-            print "Correct credentials already set."
+            print "Correct credentials already set for {}.".format(PROJECT_NAME)
         else:
             shutil.copy(project_boto_creds, master_boto_creds)
             #Set permissions if needed here
             print "Set {0} credentails as default".format(PROJECT_NAME)
     else:
-        from fabric.api import env, prompt
+
         if os.path.exists(master_boto_creds) and os.path.isfile(master_boto_creds):
             master_proj = prompt('What project are the current files for? (Blank for {0}): '.format(PROJECT_NAME))
             if master_proj:
@@ -404,7 +442,7 @@ def generate_app_config():  # generate_ebxconfig():
     # Copy ebextension 01 ex to .ebextensions & replace project name
     config_file1 = os.path.join(config_path, '01_%s_postgis.config' % PROJECT_NAME)
     shutil.copy(os.path.join(config_ex_path, '01_app_postgis.config.ex'), config_file1)
-    searchExp = '{{project}}'  # replaces project name in the file
+    searchExp = '{{project}}'  # replaces project name in the file  #TODO: could import whole string, do a format and save
     for line in fileinput.input(config_file1, inplace=True):
         if searchExp in line:
             line = line.replace(searchExp, PROJECT_NAME)
@@ -421,6 +459,9 @@ def eb_init():  # The environment must exist, as must the tag
     """
     Initiate eb tools copy to .git of repo
     """
+
+    new_creds()
+
     if not os.path.exists(_get_ebextensions_dir()):
         generate_app_config()
     else:
@@ -428,6 +469,7 @@ def eb_init():  # The environment must exist, as must the tag
 
     sh_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/AWSDevTools-RepositorySetup.sh')
     local('bash ' + sh_path)  # Run shell script that creates git aliases
+    local('git aws.config')
 
 # TODO: create the yaml file for config, where is it needed though?
 
