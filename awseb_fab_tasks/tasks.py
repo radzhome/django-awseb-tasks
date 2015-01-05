@@ -17,7 +17,7 @@ import boto.ec2.autoscale
 import boto.exception
 import boto.rds2
 from fabric import colors
-from fabric.api import env, task, run, prompt #, settings
+from fabric.api import env, task, run, prompt, settings
 from fabric.operations import local
 from fabric.context_managers import hide, cd
 import prettytable
@@ -125,11 +125,16 @@ def _get_tag_from_commit(commit):
     """ Returns the tag of a commit """  # TODO: Try and get rid of dependency on points-at
     if commit.startswith('git-'):
         last = commit.rfind("-")
-        with hide('running', 'stdout', 'stderr'):
+        with hide('running', 'stdout', 'stderr'), settings(warn_only=True):
+
             result = local('git tag --points-at %s' % commit[4:last], capture=True)
-        if result.succeeded:
-            return '%s %s' % (colors.blue(result), commit[4:20])
-    return commit
+            # if result.stderr:
+            #     result = local('git tag --points-at %s' % commit[4:20], capture=True)
+            if result.stderr:
+                return commit
+        # if result.succeeded:
+        #     return '%s %s' % (colors.blue(result), commit[4:20])
+    return commit  #'%s' % colors.blue(commit)
 
 
 def _get_instance_environment(instance):
@@ -420,7 +425,8 @@ def _get_ebextensions_dir():
     """
     Returns the .ebextensions directory which is always at the root of the repository
     """
-    git_directory = local('git rev-parse --show-toplevel', capture=True)  # get stderr & stdout
+    with hide('running', 'stdout', 'stderr'):
+        git_directory = local('git rev-parse --show-toplevel', capture=True)  # get stderr & stdout
     return os.path.join(git_directory, '.ebextensions/')
 
 @task
