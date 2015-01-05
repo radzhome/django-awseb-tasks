@@ -102,11 +102,11 @@ class INI:
             match = pattern.match(line)
             # New section beginning.Check if some old section ended here
             # Old section would end if, pending section is not None
-            if match:
+            if match and line.strip() != '[Credentials]':  # Find the section header name i.e. Credentials, use global
                 self.add_if_pending(pending_section, pending_lines)
                 pending_lines = [line.strip()]
                 pending_section = match.group(1).strip()
-            else:  #some lines for the section
+            else:  #some lines for the section i.e. lines following [Credentials]
                 pending_lines.append(line.strip())
 
         self.add_if_pending(pending_section, pending_lines)

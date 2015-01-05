@@ -74,6 +74,7 @@ class DevTools:
         print 'Creating git zip archive...'
         try:
             call("git archive {0} --format=zip > {1}".format(commit, filename), shell=True)
+            print "git archive {0} --format=zip > {1}".format(commit, filename)
         except (CalledProcessError, OSError) as e:
             sys.exit("Error: Cannot archive your repository due to an unknown error")
         print 'Created zip archive.'
@@ -128,7 +129,7 @@ class DevTools:
                 tag = '-' + tag
             epoch = int(time.time() * 1000)
             commit_id = self.commit_id(commit)
-            label = "git-{0}{1} {2}".format(commit_id, epoch, tag)
+            label = "git-{0}{1}_{2}".format(commit_id, epoch, tag)
 
         return label
 
@@ -220,6 +221,6 @@ class DevTools:
             commit = "HEAD"
 
         print "Preparing to update the AWS Elastic Beanstalk environment %s..." % env
-        version_label = self.version_label(commit, tag=None)
+        version_label = self.version_label(commit, tag=tag)
         self.create_application_version(env, commit, version_label)
         self.update_environment(env, version_label)

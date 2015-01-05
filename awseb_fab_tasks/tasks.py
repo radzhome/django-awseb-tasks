@@ -17,7 +17,7 @@ import boto.ec2.autoscale
 import boto.exception
 import boto.rds2
 from fabric import colors
-from fabric.api import env, task, run
+from fabric.api import env, task, run, settings
 from fabric.operations import local
 from fabric.context_managers import hide, cd
 import prettytable
@@ -29,6 +29,9 @@ from decorators import args_required
 DEFAULT_REGION = os.environ.get('DEFAULT_REGION', 'us-east-1')
 PROJECT_NAME = os.environ.get('PROJECT_NAME')
 DB_HOST = os.environ.get('DB_HOST')
+
+# Used to copy templates and run extra scripts in eb_init and generate_config
+EB_TASKS_BASE_PATH = os.path.realpath(os.path.dirname(__file__))
 
 # Pretty Table color settings
 CLEAR_SCREEN = '\x1b[2J\x1b[H'
@@ -337,62 +340,80 @@ def memcached(cmd):
 
 @task
 def sw_creds():
-    """ Allow for quickly switching the account files for AWS api using eb and boto"""
+    """
+    Allow for quickly switching the account files for AWS api using eb tasks and boto.
+    Required because boto always looks for .boto and might not be correct based on curent project.
+    """
     home_dir = os.path.expanduser("~")
     master_boto_file = '.boto'
     master_boto_creds = os.path.join(home_dir, master_boto_file)
-    master_eb_file = '.elasticbeanstalk/aws_credential_file'
-    master_eb_creds = os.path.join(home_dir, master_eb_file)
+
     project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, PROJECT_NAME))
-    project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, PROJECT_NAME))
-    if os.path.exists(project_boto_creds) and os.path.exists(project_eb_creds) and \
-        os.path.isfile(project_boto_creds) and os.path.isfile(project_eb_creds):  # files exist
+
+    if os.path.exists(project_boto_creds) and os.path.isfile(project_boto_creds):  # files exist
         import filecmp
-        if filecmp.cmp(master_boto_creds, project_boto_creds) and \
-            filecmp.cmp(master_eb_creds, project_eb_creds):  # correct file is currently set
-            print "Correct credentaisl already set."
+        if filecmp.cmp(master_boto_creds, project_boto_creds):  # correct file is currently set
+            print "Correct credentials already set."
         else:
             shutil.copy(project_boto_creds, master_boto_creds)
-            shutil.copy(project_eb_creds, master_eb_creds)
             #Set permissions if needed here
             print "Set {0} credentails as default".format(PROJECT_NAME)
     else:
         from fabric.api import env, prompt
-        if os.path.exists(master_boto_creds) and os.path.exists(master_eb_creds) and \
-            os.path.isfile(master_boto_creds) and os.path.isfile(master_eb_creds):
+        if os.path.exists(master_boto_creds) and os.path.isfile(master_boto_creds):
             master_proj = prompt('What project are the current files for? (Blank for {0}): '.format(PROJECT_NAME))
             if master_proj:
                 project_boto_creds = os.path.join(home_dir, '{0}_{1}'.format(master_boto_file, master_proj))
-                project_eb_creds = os.path.join(home_dir, '{0}_{1}'.format(master_eb_file, master_proj))
             shutil.copy(master_boto_creds, project_boto_creds)
-            shutil.copy(master_eb_creds, project_eb_creds)
             os.chmod(project_boto_creds, 0600)
-            os.chmod(project_eb_creds, 0600)
             if master_proj and master_proj != PROJECT_NAME:
                 print "Credentails set for {0}, not found for {1}.".format(master_proj, PROJECT_NAME)
         else:
             print "No master files found in your home directory."
-        print "Create current project files in {0} and {1} in correct format in your home directory " \
-              "and try this command again to save the file.".format(master_boto_file, master_eb_file)
+        print "Create current project files in {0} is in correct format in your home directory " \
+              "and try this command again to save the file.".format(master_boto_file)
         return
         # TODO:else detect / ask what files the current belong to ? & copy...if master boto or master eb does not
         # exist then ask for information, prompt . Get user input and use the correct format to create file, ask user to create manually
     print "Set credential files done"
 
 
+def _get_ebextensions_dir():
+    """
+    Returns the .ebextensions directory which is always at the root of the repository
+    """
+    git_directory = local('git rev-parse --show-toplevel', capture=True)  # get stderr & stdout
+    return os.path.join(git_directory, '.ebextensions/')
+
 @task
-def generate_app_config(): # generate_ebxconfig():
+def generate_app_config():  # generate_ebxconfig():
     """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
     #TODO: Should prolly move config, next time around if try, say already was done
-    config_path = os.path.join(os.getcwd(), '../../.ebextensions/')
-    config_file = os.path.join(config_path, '01_%s.config' % PROJECT_NAME)
-    shutil.copy(os.path.join(config_path, '01_app.config.ex'), config_file)
+
+    #TODO: Should allow to select from postgis and postgres setups
+
+    print "Creating ebextensions..."
+
+    # Configure needed directories
+    config_path = _get_ebextensions_dir()
+    config_ex_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/ebextensions/')
+
+    if not os.path.exists(config_path):
+        os.mkdir(config_path)
+
+    # Copy ebextension 01 ex to .ebextensions & replace project name
+    config_file1 = os.path.join(config_path, '01_%s_postgis.config' % PROJECT_NAME)
+    shutil.copy(os.path.join(config_ex_path, '01_app_postgis.config.ex'), config_file1)
     searchExp = '{{project}}'  # replaces project name in the file
-    for line in fileinput.input(config_file, inplace=True):
+    for line in fileinput.input(config_file1, inplace=True):
         if searchExp in line:
             line = line.replace(searchExp, PROJECT_NAME)
         sys.stdout.write(line)
-    print "Done creating %s" % config_file
+
+    # Copy ebextension 00 ex to .ebextensions
+    config_file0 = os.path.join(config_path, '00_repo_postgis.config')
+    shutil.copy(os.path.join(config_ex_path, '00_repos_postgis.config.ex'), config_file0)
+
 
 
 @task
@@ -400,11 +421,17 @@ def eb_init():  # The environment must exist, as must the tag
     """
     Initiate eb tools copy to .git of repo
     """
-    sh_path = os.path.join(os.path.realpath(os.path.dirname(__file__)),
-                       'eb_devtools/AWSDevTools-RepositorySetup.sh')
+    if not os.path.exists(_get_ebextensions_dir()):
+        generate_app_config()
+    else:
+        print "Skipping .ebextensions creation, .ebextensions already exists"
+
+    sh_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/AWSDevTools-RepositorySetup.sh')
     local('bash ' + sh_path)  # Run shell script that creates git aliases
 
 # TODO: create the yaml file for config, where is it needed though?
+
+# NO NEED FOR THIS, use the config for now, no need for config.yaml
 EB_CONFIG_TEMPLATE = u"""branch-defaults:
   develop:
     environment: kct-staging
@@ -420,7 +447,7 @@ global:
 """
 
 
-# TODO: Eb logs
+# TODO: Eb logs ( would be cool)
 
 # TODO: Eb restart / update env
 
