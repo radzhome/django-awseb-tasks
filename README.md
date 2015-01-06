@@ -38,6 +38,7 @@ Usage
 * eb_init - creats aws.push and aws.config commands used by deploy
 * new_creds
 * generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
+* environment_status:<env-name> - returns the environment health and status
 
 
 ### (OPTIONAL) Using the S3 backend for media and static (requires storages install). Add this to your settings file:
