@@ -7,12 +7,15 @@ Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  
 TODO
 -----
 - at end of upload, query the environment till goes green but let user exit
+- iterm the line does not go back up on upload %
+- aws.config, remove creds functions
 
 Feature Request
 ------------------
 * Add ability to copy buckets
 * Add ability to send local media files to bucket
-*
+* Log history
+
 History
 -----
 
@@ -32,8 +35,10 @@ Usage
 * dump_bucket - Downloads an S3 Bucket, given the bucket name
 * manage - Run a manage command remotely, need host that you can get from leader command. use appropriate cert
 * sw_creds - switch credential files for boto and eb if they exist in your home dir. Quickly switch accounts i.e kct and baker
-* generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
 * eb_init - creats aws.push and aws.config commands used by deploy
+* new_creds
+* generate_app_config - Generates .ebextensions/app.config file based on PROJECT_NAME in root of project
+
 
 ### (OPTIONAL) Using the S3 backend for media and static (requires storages install). Add this to your settings file:
 
