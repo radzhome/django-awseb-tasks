@@ -6,9 +6,10 @@ import datetime
 import itertools
 import os
 import re
-import fileinput
-import shutil
 import sys
+#import fileinput
+import shutil
+import time
 
 import boto
 import boto.beanstalk
@@ -61,7 +62,7 @@ S3_BUCKETS = {
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'),
+@args_required(('site_name', 'e.g. live, staging', 'staging'),
                #('user_name', 'e.g. trapeze, unionteam'), # TODO: user change for new projects
                )
 def dump_db(site_name):
@@ -73,7 +74,7 @@ def dump_db(site_name):
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def dump_media(site_name):
     #aws.dump_bucket(
     """ Dumps s3 media files to local dev data folder for use with load_devdata"""
@@ -86,7 +87,7 @@ def dump_media(site_name):
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def update_local_data(site_name):
     """ Runs both dump media and db commands """
     dump_db(site_name)
@@ -94,7 +95,7 @@ def update_local_data(site_name):
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def create_bucket(site_name):
     """ Creates a bucket for the project/env """
     bucket_name = '%s-%s' % (site_name, PROJECT_NAME)
@@ -115,7 +116,7 @@ def create_bucket(site_name):
 
 #TODO: Copy bucket?, rm bucket conn.delete_bucket()
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def media_to_bucket(): #ollect_media():
     """ Send local media to the env bucket """
     pass
@@ -148,11 +149,28 @@ def _sorted_instances(reservations):
     return sorted(instances, cmp=lambda a, b: cmp((_get_instance_environment(a), a.state), (_get_instance_environment(b), b.state)))
 
 
+def _get_environment_status(environment_name):
+    """ Gets the environment status. """
+    beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
+    environment = beanstalk.describe_environments(
+        environment_names=[environment_name, ]
+    )['DescribeEnvironmentsResponse']['DescribeEnvironmentsResult']['Environments']
+    return environment[0]['Status'], environment[0]['Health']
+
+@task
+@args_required(
+    ('environment_name', 'e.g. {0}-staging'.format(PROJECT_NAME)),
+)
+def environment_status(environment_name):
+    """ Gets the environment status. """
+    environment = _get_environment_status(environment_name)
+    print "Details for {}".format(environment_name)
+    print 'Status:', environment[0], ' Health:', environment[1]
+
+
 @task
 def list_environments():
-    """
-    Prints a table of currently active AWS Elastic Beanstalk environments along with status information.
-    """
+    """ Prints a table of currently active AWS Elastic Beanstalk environments along with status information. """
     beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
     environments = beanstalk.describe_environments()['DescribeEnvironmentsResponse']['DescribeEnvironmentsResult']['Environments']
     table = prettytable.PrettyTable(['Name', 'CNAME', 'Health/Status', 'Last Updated', 'Version'])
@@ -222,8 +240,8 @@ def list_instances(environment=None):
 
 @task
 @args_required(
-    ('site_name', 'e.g. live, staging'),
-    ('tag', 'e.g. {0}-0.0.1ALPHA, blank for develop'.format(PROJECT_NAME)),
+    ('site_name', 'e.g. live, staging', 'staging'),
+    ('tag', 'e.g. {0}-0.0.1ALPHA'.format(PROJECT_NAME), 'develop'),
 )
 def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     """
@@ -236,16 +254,33 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
     beanstalk.describe_environment_resources(environment_name=environment)
 
-    if not tag:
-        tag = 'develop'  # use develop branch by default
+    # if not tag:  # will now be set as default by args_required dec
+    #     tag = 'develop'  # use develop branch by default
 
-    local('git pull')  # pull to ensure tag is there
-    commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
+    print "Running 'git pull'..."
+    with hide('running'):
+        local('git pull')  # pull to ensure tag is there
+        commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
 
-    print colors.blue('deploying %s (%s) to %s on elasticbeanstalk') % (tag, commit[:8], environment)
-    push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
+    print colors.blue('Deploying %s (%s) to %s to Elastic Beanstalk...') % (tag, commit[:8], environment)
+    with hide('running'):
+        push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
     local(push_command)
 
+    poll_env = prompt("Poll environment status until 'Ready' state? (Y/N) [default: N]")
+
+    if poll_env.lower() == 'y':
+        dot_print = ''
+        while True:
+            time.sleep(4)
+            status, health = _get_environment_status(environment)
+            sys.stdout.write("Status & Health: {}, {}{}\r".format(status, health, dot_print))
+            sys.stdout.flush()
+            dot_print += "."
+            if status == 'Ready':
+                print '\n'
+                break
+        print "Environment update complete. See AWS Beanstalk console for details."
 
 @task
 def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
@@ -264,7 +299,7 @@ def dump_bucket(bucket_name, prefix='', out_path='', strip_prefix=False):
         strip_prefix        - strip the prefix from output filenames. Default False.
 
     """
-    print 'dumping bucket', bucket_name
+    print 'Dumping bucket', bucket_name
     if not isinstance(strip_prefix, bool):
         strip_prefix = (strip_prefix == 'True')
     try:
@@ -299,7 +334,7 @@ def _get_instances_for_site(site_name):
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def leader(site_name):
     """ Returns ssh connection string to leader instance """
     insts = _get_instances_for_site(site_name)
@@ -310,7 +345,7 @@ def leader(site_name):
 
 
 @task
-@args_required(('site_name', 'e.g. live, staging'), )
+@args_required(('site_name', 'e.g. live, staging', 'staging'), )
 def instances(site_name):
     """ Returns ssh connection string to available instance """
     instances = _get_instances_for_site(site_name)
@@ -362,13 +397,13 @@ def _copy_if_no_exists(project_boto_creds, master_boto_creds):
 
 @task
 def new_creds():
-
+    """ Create new credentials, overwrite if required. Switched to the new credentials."""
     # Check if creds exist, ask if overwrite if they do
     project_boto_creds = _get_project_boto_creds()
     master_boto_creds = _get_master_boto_creds()
-
     if os.path.exists(project_boto_creds):
-        overwrite = prompt('Credentials file already exists for {}. Overwrite it (Y/N)?: '.format(PROJECT_NAME))
+        overwrite = prompt('Credentials file already exists for {}. Overwrite it (Y/N)? [default: N]: '.format(
+            PROJECT_NAME))
         if overwrite.lower() == 'y':
             os.remove(project_boto_creds)
         else:
@@ -380,19 +415,19 @@ def new_creds():
     aws_access_key = prompt('Please provide the AWS_ACCESS_KEY for {}: '.format(PROJECT_NAME))
     aws_secret_key = prompt('Please provide the AWS_SECRET_KEY for {}: '.format(PROJECT_NAME))
 
-    new_creds = credential_format.format(
+    new_credentials_string = credential_format.format(
         YOUR_AWS_ACCESS_KEY_ID=aws_access_key,
         YOUR_AWS_SECRET_ACCESS_KEY=aws_secret_key,
     )
 
     with open(project_boto_creds, 'w') as f:
-        f.write(new_creds)
+        f.write(new_credentials_string)
     os.chmod(project_boto_creds, 0600)
     _copy_if_no_exists(project_boto_creds, master_boto_creds)
 
     print "Credentials file created."
 
-    # Automatically switch to the creds for this project
+    # Automatically switch to the credentials for this project
     sw_creds()
 
 @task
@@ -429,9 +464,15 @@ def sw_creds():
         print "Create current project files in {0} is in correct format in your home directory " \
               "and try this command again to save the file.".format(master_boto_file)
         return
-        # TODO:else detect / ask what files the current belong to ? & copy...if master boto or master eb does not
-        # exist then ask for information, prompt . Get user input and use the correct format to create file, ask user to create manually
     print "Set credential files done"
+
+
+def _get_git_root_dir():
+    """
+    Returns the root of the git repository
+    """
+    with hide('running', 'stdout', 'stderr'):
+        return local('git rev-parse --show-toplevel', capture=True)  # get stderr & stdout
 
 
 def _get_ebextensions_dir():
@@ -439,15 +480,12 @@ def _get_ebextensions_dir():
     Returns the .ebextensions directory which is always at the root of the repository
     """
     with hide('running', 'stdout', 'stderr'):
-        git_directory = local('git rev-parse --show-toplevel', capture=True)  # get stderr & stdout
+        git_directory = _get_git_root_dir()
     return os.path.join(git_directory, '.ebextensions/')
 
 @task
 def generate_app_config():  # generate_ebxconfig():
     """ Generates .ebextensions/app.config file based on PROJECT_NAME"""
-    #TODO: Should prolly move config, next time around if try, say already was done
-
-    #TODO: Should allow to select from postgis and postgres setups
 
     print "Creating ebextensions..."
 
@@ -458,19 +496,33 @@ def generate_app_config():  # generate_ebxconfig():
     if not os.path.exists(config_path):
         os.mkdir(config_path)
 
+    is_postgis = prompt('Does {} require postgis support (Y/N)? [default: Y]: '.format(
+        PROJECT_NAME))
+    if is_postgis.lower().strip() == 'n':
+        db_backend_string = 'postgres'
+    else:
+        db_backend_string = 'postgis'
+
     # Copy ebextension 01 ex to .ebextensions & replace project name
-    config_file1 = os.path.join(config_path, '01_%s_postgis.config' % PROJECT_NAME)
-    shutil.copy(os.path.join(config_ex_path, '01_app_postgis.config.ex'), config_file1)
-    searchExp = '{{project}}'  # replaces project name in the file  #TODO: could import whole string, do a format and save
-    for line in fileinput.input(config_file1, inplace=True):
-        if searchExp in line:
-            line = line.replace(searchExp, PROJECT_NAME)
-        sys.stdout.write(line)
+    config_ex_file1 = os.path.join(config_ex_path, '01_app_%s.config.ex' % db_backend_string)
+    config_file1 = os.path.join(config_path, '01_%s_%s.config' % (PROJECT_NAME, db_backend_string))
+    with open(config_ex_file1, 'r') as f:
+        config_file1_buf = f.read()
+    config_file1_buf = config_file1_buf.format(project=PROJECT_NAME)
+    with open(config_file1, 'w') as f:
+        f.write(config_file1_buf)
 
     # Copy ebextension 00 ex to .ebextensions
-    config_file0 = os.path.join(config_path, '00_repo_postgis.config')
-    shutil.copy(os.path.join(config_ex_path, '00_repos_postgis.config.ex'), config_file0)
+    config_file0 = os.path.join(config_path, '00_repo_%s.config' % db_backend_string)
+    shutil.copy(os.path.join(config_ex_path, '00_repos_%s.config.ex' % db_backend_string), config_file0)
 
+
+def _line_prepend_to_file(filename, line):
+    """ Adds a line to the top of a file """
+    with open(filename, 'r+') as f:
+        content = f.read()
+        f.seek(0, 0)
+        f.write(line.rstrip('\r\n') + '\n' + content)
 
 
 @task
@@ -478,20 +530,27 @@ def eb_init():  # The environment must exist, as must the tag
     """
     Initiate eb tools copy to .git of repo
     """
-
+    import boto  # Try to import to verify installation
+    boto_path = boto.__path__[0][:boto.__path__[0].rfind('/')]
+    boto_path_import = "import sys; sys.path.insert(0, '{}')".format(boto_path)
     new_creds()
-
     if not os.path.exists(_get_ebextensions_dir()):
         generate_app_config()
     else:
-        print "Skipping .ebextensions creation, .ebextensions already exists"
-
+        print "Skipping .ebextensions/ creation, .ebextensions already exists..."
     sh_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/AWSDevTools-RepositorySetup.sh')
-    local('bash ' + sh_path)  # Run shell script that creates git aliases
-    #local('git aws.config') # No need for now, asks for key again
+    with hide('running', 'stdout', 'stderr'):
+        local('bash ' + sh_path)  # Run shell script that creates git aliases
+    dev_tools_path = os.path.join(_get_git_root_dir(), '.git', 'AWSDevTools', 'aws', 'dev_tools.py')
+    _line_prepend_to_file(dev_tools_path, boto_path_import)
+    print "Running 'git aws.config'..."
+    with hide('running'):
+        local('git aws.config')  # No need for now, asks for key again
 
-# TODO: create the yaml file for config, where is it needed though?
 
+
+
+# TODO: create the yaml file for config/ keep current format/ not required yet
 # NO NEED FOR THIS, use the config for now, no need for config.yaml
 EB_CONFIG_TEMPLATE = u"""branch-defaults:
   develop:
@@ -507,6 +566,7 @@ global:
   sc: git
 """
 
+# TODO: App config should generate settings_prod.py & replace wsgi.py as well for beanstalk
 
 # TODO: Eb logs ( would be cool)
 

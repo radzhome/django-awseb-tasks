@@ -17,8 +17,10 @@
 # specific language governing permissions and limitations under the
 # License.
 
+import os
+import sys
 import argparse
-from aws.dev_tools import *
+from aws.dev_tools import DevTools
 
 if __name__ == "__main__":
 

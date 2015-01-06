@@ -1,15 +1,19 @@
+import sys
+import os
+import time
 from subprocess import call
 from subprocess import check_call
 
 import boto
 import boto.beanstalk
-from boto.beanstalk.exception import *
-import time
-import sys
+from boto.beanstalk.exception import InsufficientPrivileges, TooManyBuckets, TooManyApplications, \
+    TooManyApplicationVersions
+#import time
+#import sys
 
 import tempfile
 import shutil
-from elastic_beanstalk_config import *
+from elastic_beanstalk_config import CalledProcessError, check_output, ElasticBeanstalkConfig
 
 # -*-python-*-
 
@@ -74,7 +78,7 @@ class DevTools:
         print 'Creating git zip archive...'
         try:
             call("git archive {0} --format=zip > {1}".format(commit, filename), shell=True)
-            print "git archive {0} --format=zip > {1}".format(commit, filename)
+
         except (CalledProcessError, OSError) as e:
             sys.exit("Error: Cannot archive your repository due to an unknown error")
         print 'Created zip archive.'
@@ -129,8 +133,7 @@ class DevTools:
                 tag = '-' + tag
             epoch = int(time.time() * 1000)
             commit_id = self.commit_id(commit)
-            label = "git-{0}-{1}_{2}".format(commit_id, epoch, tag)
-
+            label = "git-{0}-{1}{2}".format(commit_id, epoch, tag)
         return label
 
     def bucket_name(self):
@@ -141,7 +144,8 @@ class DevTools:
             sys.exit("Error: You have exceeded the number of Amazon S3 buckets for your account")
         except InsufficientPrivileges:
             sys.exit(
-                "Error: Access was denied to the Amazon S3 bucket. You must use AWS credentials that have permissions to access the bucket")
+                "Error: Access was denied to the Amazon S3 bucket. "
+                "You must use AWS credentials that have permissions to access the bucket")
         except Exception:
             sys.exit("Error: Failed to get the Amazon S3 bucket name")
 
@@ -162,38 +166,43 @@ class DevTools:
 
     @staticmethod
     def upload_progress_cb(so_far, total):
-        print '- {} bytes transferred out of {} ({:.0f}%)...'.format(so_far, total, float(so_far)/total * 100)
-        sys.stdout.write("\033[F")
+        sys.stdout.write('- {} bytes transferred out of {} ({:.0f}%)...\r'.format(so_far, total, float(so_far)/total * 100))
+        sys.stdout.flush()
+        #sys.stdout.write("\033[F")
 
     def update_environment(self, environment, version_label):
         print "Sending environment update signal..."
         try:
             self.eb.update_environment(environment_name=environment, version_label=version_label)
-        except InsufficientPrivileges as e:
+        except InsufficientPrivileges:
             sys.exit(
-                "Error: Insufficient permissions to create the AWS Elastic Beanstalk application version. You must use AWS credentials that have the correct AWS Elastic Beanstalk permissions")
+                "Error: Insufficient permissions to create the AWS Elastic Beanstalk application version. "
+                "You must use AWS credentials that have the correct AWS Elastic Beanstalk permissions")
         except Exception as e:
             sys.exit("Error: Failed to update the AWS Elastic Beanstalk environment")
         print "Environment update initiated successfully. Wait for status to change from 'Updating' to 'Green'."
 
     def create_eb_application_version(self, commit_message, bucket_name, archived_file_name, version_label):
-        print "Creating EB Application Version..."
+        print "Creating EB Application Version {}...".format(version_label)
         try:
             self.eb.create_application_version(self.beanstalk_config.application_name(), version_label,
                                                commit_message, bucket_name, archived_file_name)
+            print "Created EB Application Version."
             return version_label
-        except TooManyApplications as e:
+        except TooManyApplications:
             sys.exit(
-                "Error: You have exceeded the number of AWS Elastic Beanstalk applications for your account. For more information, see AWS Service Limits in the AWS General Reference")
-        except TooManyApplicationVersions as e:
+                "Error: You have exceeded the number of AWS Elastic Beanstalk applications for your account. "
+                "For more information, see AWS Service Limits in the AWS General Reference")
+        except TooManyApplicationVersions:
             sys.exit(
-                "Error: You have exceeded the number of AWS Elastic Beanstalk application versions for your account. For more information, see AWS Service Limits in the AWS General Reference")
-        except InsufficientPrivileges as e:
+                "Error: You have exceeded the number of AWS Elastic Beanstalk application versions for your account. "
+                "For more information, see AWS Service Limits in the AWS General Reference")
+        except InsufficientPrivileges:
             sys.exit(
-                "Error: Insufficient permissions to update the AWS Elastic Beanstalk environment. You must use AWS credentials that have the correct AWS Elastic Beanstalk permissions")
-        except Exception as e:
+                "Error: Insufficient permissions to update the AWS Elastic Beanstalk environment. "
+                "You must use AWS credentials that have the correct AWS Elastic Beanstalk permissions")
+        except Exception:
             sys.exit("Error: Failed to create the AWS Elastic Beanstalk application version")
-        print "Created EB Application Version."
 
     def create_application_version(self, env, commit, version_label=None):
         if not env:

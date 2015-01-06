@@ -1,12 +1,11 @@
-echo "Creating EB aws.* scripts for git..."
-SCRIPTDIR="$( cd "$( dirname "$0" )" && pwd )"
-#GIT_DIRECTORY=$GIT_DIR
+echo "Creating EB aws.push & aws.config extensions for git..."
+SCRIPT_DIR="$( cd "$( dirname "$0" )" && pwd )"
 GIT_DIRECTORY="$(git rev-parse --show-toplevel)/.git"
 
 if [ -z "$GIT_DIRECTORY" ]; then GIT_DIRECTORY=.git; fi
 
 rm -rf $GIT_DIRECTORY/AWSDevTools
-cp -r "$SCRIPTDIR"/scripts $GIT_DIRECTORY/AWSDevTools
+cp -r "$SCRIPT_DIR"/scripts $GIT_DIRECTORY/AWSDevTools
 
 git config alias.aws.elasticbeanstalk.remote "!$GIT_DIRECTORY/AWSDevTools/aws.elasticbeanstalk.push --remote-url"
 git config aws.endpoint.us-east-1 git.elasticbeanstalk.us-east-1.amazonaws.com
