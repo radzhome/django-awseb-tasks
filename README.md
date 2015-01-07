@@ -13,6 +13,21 @@ TODO
 - create new env / delete
 - create new app
 
+Dependencies
+-----
+
+* Fabric
+* Django
+* Boto
+* prettytable
+
+Limitations
+-----
+
+The only fully supported db backend right now is postgres / postgis using the psycopg2 driver. The problem is that MySQL does not support all spatial operations, see the [https://docs.djangoproject.com/en/1.7/ref/contrib/gis/db-api/#mysql-spatial-limitations](django docs).  In the future ebextensions will be added to support mysql without spatial support in the future.
+
+The current AMI the tool works with is ami-35792c5c. The yum packages often change, this being a legacy AMI, packages do come and go and the only way to freeze this is to create a custom AMI will all prerequisites installed. I will create such AMI in the near future and provide the ID.  Right now the ebextensions file installs all required packages as an instance is built.
+
 Feature Request
 ------------------
 * Add ability to copy buckets
