@@ -6,9 +6,11 @@ Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  
 
 TODO
 -----
-- at end of upload, query the environment till goes green but let user exit
-- iterm the line does not go back up on upload %
-- aws.config, remove creds functions
+- logging
+- template creation
+- restart / update env
+- create new env / delete
+- create new app
 
 Feature Request
 ------------------

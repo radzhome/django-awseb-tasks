@@ -14,7 +14,7 @@ ALLOWED_HOSTS = [
 
 SECRET_KEY = os.environ['DJANGO_SECRET_KEY']
 
-DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'qa22@trapeze.com')  # 'noreply@khv2015.ca'
+DEFAULT_FROM_EMAIL = os.environ.get('DEFAULT_FROM_EMAIL', 'qa22@trapeze.com')
 
 
 # Uncomment on local development if debug is False.

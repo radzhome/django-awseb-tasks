@@ -1,4 +1,4 @@
-from aws.ini import *
+from ini import INI
 from subprocess import check_output
 from subprocess import CalledProcessError
 import os
@@ -133,7 +133,7 @@ class ElasticBeanstalkConfig:
     def dev_tools_endpoint(self):
         endpoint = self.eb_endpoint_settings["DevToolsEndpoint"]
         if not endpoint:
-            endpoint = dev_tools_endpoint_default()
+            endpoint = self.dev_tools_endpoint_default()
         return endpoint
 
     def dev_tools_endpoint_default(self, region):

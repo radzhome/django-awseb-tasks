@@ -38,6 +38,7 @@ EB_TASKS_BASE_PATH = os.path.realpath(os.path.dirname(__file__))
 CLEAR_SCREEN = '\x1b[2J\x1b[H'
 COLOR_FNS = {
     'Green': colors.green,
+    'Grey': colors.yellow,  # Color Health states of env
     'Red': lambda s: colors.red(s, bold=True),
     'Yellow': colors.yellow,
 }
@@ -49,7 +50,12 @@ INSTANCE_STATE_FNS = {
     'pending': colors.blue,
     'shutting-down': colors.yellow,
 }
-
+EB_ENV_STATE_FNS = {
+    'Ready': lambda s: colors.green(s, bold=True),
+    'Updating': lambda s: colors.yellow(s, bold=True),
+    'Launching': lambda s: colors.yellow(s, bold=True),
+    'Terminating': lambda s: colors.yellow(s, bold=True),
+}
 
 #Defines the S3 Buckets based on the project name and the environment
 #Problem, bucket names are unique, TODO: Make it something like unionteam-projectname-qa
@@ -124,7 +130,7 @@ def media_to_bucket(): #ollect_media():
 
 def _get_tag_from_commit(commit):
     """ Returns the tag of a commit """  # TODO: Try and get rid of dependency on points-at
-    if commit.startswith('git-'):
+    if commit and commit.startswith('git-'):
         last = commit.rfind("-")
         with hide('running', 'stdout', 'stderr'), settings(warn_only=True):
 
@@ -135,7 +141,7 @@ def _get_tag_from_commit(commit):
                 return commit
         # if result.succeeded:
         #     return '%s %s' % (colors.blue(result), commit[4:20])
-    return commit  #'%s' % colors.blue(commit)
+    return commit
 
 
 def _get_instance_environment(instance):
@@ -159,13 +165,14 @@ def _get_environment_status(environment_name):
 
 @task
 @args_required(
-    ('environment_name', 'e.g. {0}-staging'.format(PROJECT_NAME)),
+    ('environment_name', 'e.g. {0}-staging'.format(PROJECT_NAME), '{0}-staging'.format(PROJECT_NAME)),
 )
 def environment_status(environment_name):
     """ Gets the environment status. """
     environment = _get_environment_status(environment_name)
     print "Details for {}".format(environment_name)
-    print 'Status:', environment[0], ' Health:', environment[1]
+    colorize = COLOR_FNS.get(environment[1], lambda s: s)
+    print 'Status:', colorize(environment[0]), ' Health:', colorize(environment[1])
 
 
 @task
@@ -185,8 +192,7 @@ def list_environments():
             colors.white(environment['CNAME']),
             colorize('%s/%s' % (environment['Health'], environment['Status'])),
             datetime.datetime.utcfromtimestamp(environment['DateUpdated']).strftime('%Y-%m-%d %H:%M:%S'),
-            _get_tag_from_commit(environment['VersionLabel']),
-         ))
+            _get_tag_from_commit(environment['VersionLabel']), ))
     print table
 
 
@@ -196,7 +202,7 @@ def status():
 
 
 @task
-def list_instances(environment=None):
+def list_instances():
     """
     Prints a table of currently running EC2 instances along with status information.
     """
@@ -254,13 +260,26 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
     beanstalk.describe_environment_resources(environment_name=environment)
 
-    # if not tag:  # will now be set as default by args_required dec
-    #     tag = 'develop'  # use develop branch by default
-
     print "Running 'git pull'..."
     with hide('running'):
         local('git pull')  # pull to ensure tag is there
         commit = local('git rev-parse %s^{commit}' % tag, capture=True)  # get commit id based on tag
+
+    # Check if version exists already
+    from eb_devtools.scripts.aws.dev_tools import DevTools
+    dev_tools = DevTools()
+    version_label = dev_tools.version_label(commit, tag)  # commit, tag
+    #Also check if commit has an actual tag in git? NO b/c will be develop by default,
+    #TODO: # what if 'master'? then check for tags ...
+    #git describe --exact-match <commit-id>
+    #git tag --contains <commit>
+    #http://stackoverflow.com/questions/1474115/find-tag-information-for-a-given-commit
+
+    version_label_exists = beanstalk.describe_application_versions(version_labels=[version_label, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
+    if version_label_exists:
+        deploy_existing = prompt("The version label already exists in 'Application Versions'. Deploy it? (Y/N) [default: Y]")
+        if deploy_existing.lower() != 'n':
+            dev_tools.update_environment(environment, version_label)
 
     print colors.blue('Deploying %s (%s) to %s to Elastic Beanstalk...') % (tag, commit[:8], environment)
     with hide('running'):
@@ -279,6 +298,8 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
             dot_print += "."
             if status == 'Ready':
                 print '\n'
+                colorize = COLOR_FNS.get(health, lambda s: s)
+                colorize('Environment Ready, and status {}.'.format(health))
                 break
         print "Environment update complete. See AWS Beanstalk console for details."
 
@@ -530,6 +551,9 @@ def eb_init():  # The environment must exist, as must the tag
     """
     Initiate eb tools copy to .git of repo
     """
+
+    #TODO: Copy the required files needed for beanstalk wsgi settings
+
     import boto  # Try to import to verify installation
     boto_path = boto.__path__[0][:boto.__path__[0].rfind('/')]
     boto_path_import = "import sys; sys.path.insert(0, '{}')".format(boto_path)
@@ -565,6 +589,8 @@ global:
   profile: eb-cli
   sc: git
 """
+
+# TODO: move directories around so easier to import modules
 
 # TODO: App config should generate settings_prod.py & replace wsgi.py as well for beanstalk
 
