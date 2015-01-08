@@ -12,6 +12,13 @@ TODO
 - restart / update env
 - create new env / delete
 - create new app
+- cleanup memcached to be sep:
+- 
+    libmemcached: ''
+    libmemcached-devel: ''
+    cyrus-sasl-devel: ''
+    zlib-devel: ''
+
 
 Dependencies
 -----
