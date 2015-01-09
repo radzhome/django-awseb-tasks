@@ -12,13 +12,16 @@ TODO
 - restart / update env
 - create new env / delete
 - create new app
-- cleanup memcached to be sep:
+- eb init - re-create from eb cli and add
+
+- cleanup memcached to be sep (Ask if memcached is required. These are the libs:
 - 
     libmemcached: ''
     libmemcached-devel: ''
     cyrus-sasl-devel: ''
     zlib-devel: ''
 
+- deploy, add --from-existing flag (see boto)
 
 Dependencies
 -----
