@@ -276,18 +276,21 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     #http://stackoverflow.com/questions/1474115/find-tag-information-for-a-given-commit
 
     version_label_exists = beanstalk.describe_application_versions(version_labels=[version_label, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
+    deploy_existing = 'n'
     if version_label_exists:
         deploy_existing = prompt("The version label already exists in 'Application Versions'. Deploy it? (Y/N) [default: Y]")
         if deploy_existing.lower() != 'n':
             dev_tools.update_environment(environment, version_label)
-
-    print colors.blue('Deploying %s (%s) to %s to Elastic Beanstalk...') % (tag, commit[:8], environment)
-    with hide('running'):
-        push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
-    local(push_command)
+            print "Deploying exiting version label to environment..."
+            return
+    
+    if deploy_existing.lower() == 'n':
+        print colors.blue('Deploying %s (%s) to %s to Elastic Beanstalk...') % (tag, commit[:8], environment)
+        with hide('running'):
+            push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
+        local(push_command)
 
     poll_env = prompt("Poll environment status until 'Ready' state? (Y/N) [default: N]")
-
     if poll_env.lower() == 'y':
         dot_print = ''
         while True:
