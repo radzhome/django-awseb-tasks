@@ -33,9 +33,7 @@ class ElasticBeanstalkConfig:
         }
 
         self.CREDENTIAL_KEYS = {
-            #"access_key_id": "AWSAccessKeyId",
             "access_key_id": "aws_access_key_id",
-            #"secret_access_key": "AWSSecretKey"
             "secret_access_key": "aws_secret_access_key"
         }
 
@@ -86,14 +84,10 @@ class ElasticBeanstalkConfig:
     def default_credential_file_path(self):
         if os.getenv('HOME'):
             return os.path.join(os.getenv('HOME'), ".boto")
-            #return os.path.join(os.getenv('HOME'), ".elasticbeanstalk", "aws_credential_file")
         return None
 
     def set_credential_file_path(self):
         self.credential_file_path = self.default_credential_file_path()
-        # self.credential_file_path = os.getenv('AWS_CREDENTIAL_FILE') or (
-        #     self.eb_config_settings and self.eb_config_settings.get(
-        #         "AwsCredentialFile")) or self.default_credential_file_path()
 
     def set_credential_file(self):
         if not self.credential_file and self.credential_file_exists():
