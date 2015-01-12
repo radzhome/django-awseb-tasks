@@ -269,27 +269,23 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     from eb_devtools.scripts.aws.dev_tools import DevTools
     dev_tools = DevTools()
     version_label = dev_tools.version_label(commit, tag)  # commit, tag
-    #Also check if commit has an actual tag in git? NO b/c will be develop by default,
-    #TODO: # what if 'master'? then check for tags ...
-    #git describe --exact-match <commit-id>
-    #git tag --contains <commit>
-    #http://stackoverflow.com/questions/1474115/find-tag-information-for-a-given-commit
 
-    #TODO: Test this out
     version_label_exists = beanstalk.describe_application_versions(version_labels=[version_label, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
     if not version_label_exists:
-        commit_tag = local('git tag --contains %s' % commit)  # Get the tag of the commit if exists
-        if commit_tag:
-            version_label_exists = beanstalk.describe_application_versions(version_labels=[commit_tag, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
-            version_label = commit_tag
-            
+        with hide('running'):
+            commit_tag = local('git tag --contains %s' % commit, capture=True)  # Get the tag of the commit if exists
+        commit_tag = commit_tag.strip('\n')
+        if commit_tag: commit_tag = commit_tag.split('\n')
+        if len(commit_tag) == 1:
+            version_label_exists = beanstalk.describe_application_versions(version_labels=[commit_tag[0], ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
+            version_label = commit_tag[0]
     deploy_existing = 'n'
     if version_label_exists:
-        deploy_existing = prompt("The version label already exists in 'Application Versions'. Deploy it? (Y/N) [default: Y]")
+        deploy_existing = prompt("Version label {} already exists in 'Application Versions'. Deploy it? (Y/N) "
+                                 "[default: Y]".format(version_label))
         if deploy_existing.lower() != 'n':
+            print "Updating environment {} exiting version label {}".format(environment, version_label)
             dev_tools.update_environment(environment, version_label)
-            print "Deploying exiting version label to environment..."
-            return
     
     if deploy_existing.lower() == 'n':
         print colors.blue('Deploying %s (%s) to %s to Elastic Beanstalk...') % (tag, commit[:8], environment)
@@ -297,11 +293,11 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
             push_command = 'git aws.push -c {0} --environment {1} --tag {2}'.format(commit, environment, tag)
         local(push_command)
 
-    poll_env = prompt("Poll environment status until 'Ready' state? (Y/N) [default: N]")
-    if poll_env.lower() == 'y':
-        dot_print = ''
+    poll_env = prompt("Poll environment status until 'Ready' state? (Y/N) [default: Y]")
+    if poll_env.lower() != 'n':
+        dot_print = '.'
         while True:
-            time.sleep(4)
+            time.sleep(5)
             status, health = _get_environment_status(environment)
             sys.stdout.write("Status & Health: {}, {}{}\r".format(status, health, dot_print))
             sys.stdout.flush()
@@ -582,23 +578,29 @@ def eb_init():  # The environment must exist, as must the tag
         local('git aws.config')  # No need for now, asks for key again
 
 
+#TODO:
+def eb_restart():
+    #beanstalk.restart_app_server(environment_id=None, environment_name=None)
+    pass
 
+#TODO
+def eb_rebuild():
+    # beanstalk.rebuild_environment(environment_id=None, environment_name=None)
+    pass
 
-# TODO: create the yaml file for config/ keep current format/ not required yet
-# NO NEED FOR THIS, use the config for now, no need for config.yaml
-EB_CONFIG_TEMPLATE = u"""branch-defaults:
-  develop:
-    environment: kct-staging
-  master:
-    environment: kct-live
-global:
-  application_name: kct
-  default_ec2_keyname: union
-  default_platform: Python 2.7
-  default_region: us-east-1
-  profile: eb-cli
-  sc: git
-"""
+#TODO:
+def eb_swap_cnames():
+    #beanstalk.swap_environment_cnames(source_environment_id=None, source_environment_name=None, destination_environment_id=None, destination_environment_name=None)
+    pass
+
+#TODO:
+def eb_logs():
+    # See AWS EB tools how it does it, use it.
+    pass
+
+# TODO: list_available_solution_stacks()
+
+# TODO: research validate_configuration_settings  / rquest n retrieve environment info
 
 # TODO: move directories around so easier to import modules
 
