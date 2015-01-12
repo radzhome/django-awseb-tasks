@@ -8,8 +8,6 @@ import boto
 import boto.beanstalk
 from boto.beanstalk.exception import InsufficientPrivileges, TooManyBuckets, TooManyApplications, \
     TooManyApplicationVersions
-#import time
-#import sys
 
 import tempfile
 import shutil
@@ -35,9 +33,10 @@ from elastic_beanstalk_config import CalledProcessError, check_output, ElasticBe
 
 class DevTools:
     def __init__(self):
-        self.beanstalk_config = ElasticBeanstalkConfig(os.getcwd())
-        self.eb = None
-        self.s3 = None
+        #self.beanstalk_config = ElasticBeanstalkConfig(os.getcwd())
+        from awseb_fab_tasks.tasks import _get_git_root_dir
+        self.beanstalk_config = ElasticBeanstalkConfig(_get_git_root_dir())
+        self.region, self.access_key, self.secret_key, self.eb, self.s3 = None, None, None, None, None
         self.initialize_clients()
 
     def check_credentials_provided(self):
@@ -49,12 +48,13 @@ class DevTools:
 
     def initialize_clients(self):
         self.check_credentials_provided()
-        access_key = self.beanstalk_config.access_key()
-        secret_key = self.beanstalk_config.secret_key()
-        region = self.beanstalk_config.region()
-        self.eb = boto.beanstalk.connect_to_region(region, aws_access_key_id=access_key,
-                                                   aws_secret_access_key=secret_key)
-        self.s3 = boto.s3.connect_to_region(region, aws_access_key_id=access_key, aws_secret_access_key=secret_key)
+        self.access_key = self.beanstalk_config.access_key()
+        self.secret_key = self.beanstalk_config.secret_key()
+        self.region = self.beanstalk_config.region()
+        self.eb = boto.beanstalk.connect_to_region(self.region, aws_access_key_id=self.access_key,
+                                                   aws_secret_access_key=self.secret_key)
+        self.s3 = boto.s3.connect_to_region(self.region, aws_access_key_id=self.access_key,
+                                            aws_secret_access_key=self.secret_key)
 
     @staticmethod
     def commit_exists(commit):
@@ -168,10 +168,10 @@ class DevTools:
     def upload_progress_cb(so_far, total):
         sys.stdout.write('- {} bytes transferred out of {} ({:.0f}%)...\r'.format(so_far, total, float(so_far)/total * 100))
         sys.stdout.flush()
-        #sys.stdout.write("\033[F")
 
     def update_environment(self, environment, version_label):
         print "Sending environment update signal..."
+        #self.initialize_clients()
         try:
             self.eb.update_environment(environment_name=environment, version_label=version_label)
         except InsufficientPrivileges:
@@ -179,7 +179,7 @@ class DevTools:
                 "Error: Insufficient permissions to create the AWS Elastic Beanstalk application version. "
                 "You must use AWS credentials that have the correct AWS Elastic Beanstalk permissions")
         except Exception as e:
-            sys.exit("Error: Failed to update the AWS Elastic Beanstalk environment")
+            sys.exit("Error: Failed to update the AWS Elastic Beanstalk environment: {}".format(e))
         print "Environment update initiated successfully. Wait for status to change from 'Updating' to 'Green'."
 
     def create_eb_application_version(self, commit_message, bucket_name, archived_file_name, version_label):
