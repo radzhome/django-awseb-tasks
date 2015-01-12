@@ -275,7 +275,14 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     #git tag --contains <commit>
     #http://stackoverflow.com/questions/1474115/find-tag-information-for-a-given-commit
 
+    #TODO: Test this out
     version_label_exists = beanstalk.describe_application_versions(version_labels=[version_label, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
+    if not version_label_exists:
+        commit_tag = local('git tag --contains %s' % commit)  # Get the tag of the commit if exists
+        if commit_tag:
+            version_label_exists = beanstalk.describe_application_versions(version_labels=[commit_tag, ],)['DescribeApplicationVersionsResponse']['DescribeApplicationVersionsResult']['ApplicationVersions']
+            version_label = commit_tag
+            
     deploy_existing = 'n'
     if version_label_exists:
         deploy_existing = prompt("The version label already exists in 'Application Versions'. Deploy it? (Y/N) [default: Y]")
