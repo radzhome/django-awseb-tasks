@@ -29,7 +29,9 @@ class ElasticBeanstalkConfig:
             "region": "Region",
             "application_name": "ApplicationName",
             "environment_name": "EnvironmentName",
-            "dev_tools_endpoint": "DevToolsEndpoint"
+            "dev_tools_endpoint": "DevToolsEndpoint",
+            "ec2_key_name": "EC2KeyName",
+            "application_platform": "ApplicationPlatform",
         }
 
         self.CREDENTIAL_KEYS = {
