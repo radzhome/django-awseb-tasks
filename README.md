@@ -7,12 +7,10 @@ Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  
 TODO
 -----
 - deploy add parameter to deploy existing version 
-- logging (retrieve /var/log/* using fabric), ability to tail logs
-- template creation
-- restart / update env
-- create new env / delete
-- create new app
-- eb init - re-create from eb cli and add
+- logging (retrieve /var/log/* using fabric), ability to tail logs (see eb cli tool)
+- template creation from config file / setup create new app / env based on options
+- eb logs - re-create from eb cli and add
+- eb init to generate custom templates for settings / wsgi py files
 
 - cleanup memcached to be sep (Ask if memcached is required. These are the libs:
 - 
@@ -23,13 +21,22 @@ TODO
 
 - deploy, add --from-existing flag (see boto)
 
+Feature Request
+------------------
+* Add ability to copy buckets
+* Add ability to send local media files to bucket
+* Log history
+*
 Dependencies
 -----
 
+python:
 * Fabric
 * Django
 * Boto
 * prettytable
+
+* git
 
 Limitations
 -----
@@ -37,12 +44,6 @@ Limitations
 The only fully supported db backend right now is postgres / postgis using the psycopg2 driver. The problem is that MySQL does not support all spatial operations, see the [https://docs.djangoproject.com/en/1.7/ref/contrib/gis/db-api/#mysql-spatial-limitations](django docs).  In the future ebextensions will be added to support mysql without spatial support in the future.
 
 The current AMI the tool works with is ami-35792c5c. The yum packages often change, this being a legacy AMI, packages do come and go and the only way to freeze this is to create a custom AMI will all prerequisites installed. I will create such AMI in the near future and provide the ID.  Right now the ebextensions file installs all required packages as an instance is built.
-
-Feature Request
-------------------
-* Add ability to copy buckets
-* Add ability to send local media files to bucket
-* Log history
 
 History
 -----
