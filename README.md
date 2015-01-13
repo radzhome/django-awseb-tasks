@@ -6,7 +6,7 @@ Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  
 
 TODO
 -----
-- deploy add parameter to deploy existing version 
+- deploy add parameter to deploy existing version  / update_env() <- can update name or version etc..
 - logging (retrieve /var/log/* using fabric), ability to tail logs (see eb cli tool)
 - template creation from config file / setup create new app / env based on options
 - eb logs - re-create from eb cli and add
