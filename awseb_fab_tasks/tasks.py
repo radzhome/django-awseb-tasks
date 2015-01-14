@@ -380,8 +380,8 @@ def leader(site_name):
     """ Returns ssh connection string to leader instance """
     insts = _get_instances_for_site(site_name)
     lead = insts[0].dns_name
-    print 'setting user+host: ec2-user@%s' % lead
     env.user = 'ec2-user'
+    print 'setting user+host: %s@%s' % (env.user, lead)
     env.hosts = [leader]
 
 
