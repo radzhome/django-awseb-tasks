@@ -120,4 +120,4 @@ See Usage.
 Assumptions
 ------------------
 
-The project name is unique and the name of the project is derived via the union django-template project structure. To use in a different django project, how PROJECT_NAME is derived in the fabfile would change.
+The project name is unique and the name of the project is also used as the name of the application in Elastic Beanstalk. The site i.e. live, staging, content, are created in EB as project-site.
