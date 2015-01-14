@@ -20,7 +20,22 @@ TODO
     cyrus-sasl-devel: ''
     zlib-devel: ''
 
-- deploy, add --from-existing flag (see boto)
+- add check last error
+boto: describe_events, see also create_configuration_template
+```
+                events = eb_client.describe_events(app_name,
+                                                   env_name,
+                                                   max_records=ServiceDefault.STATUS_EVENT_MAX_NUM,
+                                                   severity=ServiceDefault.STATUS_EVENT_LEVEL)
+                if len(events.result) > 0:
+                    # Having one error event
+                    for event in events.result:
+                        msg = u'{0}\t{1}\t{2}'.format(event.event_date,
+                                                      event.severity,
+                                                      event.message)
+                        log.info(u'Found last error event: {0}'.format(msg))
+                        prompt.plain(msg)
+```
 
 Feature Request
 ------------------
