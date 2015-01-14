@@ -115,6 +115,7 @@ def create_bucket(site_name):
         cors_cfg.add_rule('GET', '*')
         bucket = s3.lookup(bucket_name)
         bucket.set_cors(cors_cfg)
+        #TODO: need to create media & static directories? test
     except boto.exception.S3CreateError:
         print 'AWS returned 409 Conflict. Does the bucket already exist?'
 
@@ -123,9 +124,10 @@ def create_bucket(site_name):
 #TODO: Copy bucket?, rm bucket conn.delete_bucket()
 @task
 @args_required(('site_name', 'e.g. live, staging', 'staging'), )
-def media_to_bucket(): #ollect_media():
+def media_to_bucket():
     """ Send local media to the env bucket """
     pass
+    #TODO
 
 
 def _get_tag_from_commit(commit):
@@ -247,6 +249,18 @@ def list_instances():
 @task
 @args_required(
     ('site_name', 'e.g. live, staging', 'staging'),
+    ('version_label', 'See status command for available versions', ),
+)
+def update(site_name, version_label=None):
+    from eb_devtools.scripts.aws.dev_tools import DevTools
+    dev_tools = DevTools()
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)
+    dev_tools.update_environment(environment, version_label)
+
+
+@task
+@args_required(
+    ('site_name', 'e.g. live, staging', 'staging'),
     ('tag', 'e.g. {0}-0.0.1ALPHA'.format(PROJECT_NAME), 'develop'),
 )
 def deploy(site_name, tag=None):  # The environment must exist, as must the tag
@@ -254,7 +268,7 @@ def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     Deploy a release to the specified AWS Elastic Beanstalk environment.
     """
 
-    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-env
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)  # project-site
 
     # Will raise an error if can't connect to environment
     beanstalk = boto.beanstalk.connect_to_region(DEFAULT_REGION)
