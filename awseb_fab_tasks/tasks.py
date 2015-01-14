@@ -382,7 +382,7 @@ def leader(site_name):
     lead = insts[0].dns_name
     env.user = 'ec2-user'
     print 'setting user+host: %s@%s' % (env.user, lead)
-    env.hosts = [leader]
+    env.hosts = [lead]
 
 
 @task
