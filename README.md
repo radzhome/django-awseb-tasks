@@ -111,13 +111,26 @@ First set the required environment variables in your fab file, then import the t
     os.environ['PROJECT_NAME'] = os.getcwd().split('/')[-1]  # Import before aws_tasks, as it is used there.
     os.environ['DEFAULT_REGION'] = 'us-east-1'
     os.environ['DB_HOST'] = 'prod.czxygluip2xt.us-east-1.rds.amazonaws.com'  # RDS DB URL, update accordingly']
-    from aws_tasks import tasks as aws
+    from awseb_tasks import tasks as aws
 
 
 ### S3 Storage
 
 See Usage.
  
+Example Usage
+------------------
+
+Assuming tasks are imported as aws. You can deploy, migrate and collectstatic like this:
+
+    fab aws.deploy aws.leader aws.manage:migrate aws.manage:collectstatic
+    
+the 'leader' task stores the leader instance in env.hosts, manage makes an ssh connection which requires you use the correct ssh private key used to start the instance to connect to it. Make sure the ssh key is added to ssh agent so it gets picked up:
+
+    chmod 600 ~/.ssh/id_rsa_aws 
+    ssh-add ~/.ssh/id_rsa_aws 
+
+
 Assumptions
 ------------------
 
