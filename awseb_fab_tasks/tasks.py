@@ -58,7 +58,7 @@ EB_ENV_STATE_FNS = {
 }
 
 #Defines the S3 Buckets based on the project name and the environment
-#Problem, bucket names are unique, TODO: Make it something like unionteam-projectname-qa
+#Problem, bucket names are unique, TODO: Make it something like projectteam-projectname-qa
 S3_BUCKETS = {
     'staging': '%s-staging' % os.environ['PROJECT_NAME'],
     'live': '%s' % os.environ['PROJECT_NAME'],
@@ -69,7 +69,7 @@ S3_BUCKETS = {
 
 @task
 @args_required(('site_name', 'e.g. live, staging', 'staging'),
-               #('user_name', 'e.g. trapeze, unionteam'), # TODO: user change for new projects
+               #('user_name', 'e.g. trapeze, projectteam'), # TODO: user change for new projects
                )
 def dump_db(site_name):
     """ Dumps remote db to local dev data folder for use with load_devdata"""
@@ -414,6 +414,7 @@ def manage(command):
     ('cmd', 'e.g. flush_all'),
 )
 def memcached(cmd):
+    """ TODO """
     nc_cmd = 'nc `sed "s/:/ /g" <<< $CACHE_LOCATION` <<< "%s" ' % cmd
     cmd = 'if [ -z $CACHE_LOCATION ]; then echo "no memcached is used."; else echo $CACHE_LOCATION; %s; fi' % nc_cmd
     _run_cmd_in_python_container(cmd)
