@@ -12,6 +12,7 @@ TODO
 - template creation from config file / setup create new app / env based on options
 - eb logs - re-create from eb cli and add
 - eb init to generate custom templates for settings / wsgi py files
+- download some logs: https://www.digitalocean.com/community/tutorials/how-to-use-fabric-to-automate-administration-tasks-and-deployments
 
 - cleanup memcached to be sep (Ask if memcached is required. These are the libs:
 - 
