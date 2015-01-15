@@ -41,8 +41,9 @@ Feature Request
 ------------------
 * Add ability to copy buckets
 * Add ability to send local media files to bucket
-* Log history
-*
+* Log history / descibe events:
+* beanstalk.describe_events(application_name='kpmkhv', environment_name='kpmkhv-staging', max_records=100)
+* 
 Dependencies
 -----
 
