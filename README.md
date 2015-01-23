@@ -2,7 +2,7 @@ AWS Release Tasks
 ===============
 
 
-Fabric release taks commands to use with AWS Beanstalk that wraps around boto.  Dependencies include git, fabric, prettytable and boto.  Optional dependency is django-storages, package includes utilities for setting up your static and media backend for use in S3.
+Fabric release taks commands to use with AWS Beanstalk using boto.  Integrates with git by creating aliases for pushing code directly to the beanstalk.  Optional dependency is django-storages, package includes utilities for setting up your static and media backend for use in S3.
 
 TODO
 -----
