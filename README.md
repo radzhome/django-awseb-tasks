@@ -4,47 +4,7 @@ AWS Release Tasks
 
 Fabric release taks commands to use with AWS Beanstalk using boto.  Integrates with git by creating aliases for pushing code directly to the beanstalk.  Optional dependency is django-storages, package includes utilities for setting up your static and media backend for use in S3.
 
-TODO
------
-- sep. poll_env so can use it on other commands and sep.
-- combine collect static / migrate commands with deploy
-- logging (retrieve /var/log/* using fabric), ability to tail logs (see eb cli tool)
-- template creation from config file / setup create new app / env based on options
-- eb logs - re-create from eb cli and add
-- eb init to generate custom templates for settings / wsgi py files
-- download some logs: https://www.digitalocean.com/community/tutorials/how-to-use-fabric-to-automate-administration-tasks-and-deployments
 
-- cleanup memcached to be sep (Ask if memcached is required. These are the libs:
-- 
-    libmemcached: ''
-    libmemcached-devel: ''
-    cyrus-sasl-devel: ''
-    zlib-devel: ''
-
-- add check last error
-boto: describe_events, see also create_configuration_template
-```
-                events = eb_client.describe_events(app_name,
-                                                   env_name,
-                                                   max_records=ServiceDefault.STATUS_EVENT_MAX_NUM,
-                                                   severity=ServiceDefault.STATUS_EVENT_LEVEL)
-                if len(events.result) > 0:
-                    # Having one error event
-                    for event in events.result:
-                        msg = u'{0}\t{1}\t{2}'.format(event.event_date,
-                                                      event.severity,
-                                                      event.message)
-                        log.info(u'Found last error event: {0}'.format(msg))
-                        prompt.plain(msg)
-```
-
-Feature Request
-------------------
-* Add ability to copy buckets
-* Add ability to send local media files to bucket
-* Log history / descibe events:
-* beanstalk.describe_events(application_name='kpmkhv', environment_name='kpmkhv-staging', max_records=100)
-* 
 Dependencies
 -----
 
@@ -59,14 +19,14 @@ python:
 Limitations
 -----
 
-The only fully supported db backend right now is postgres / postgis using the psycopg2 driver. The problem is that MySQL does not support all spatial operations, see the [https://docs.djangoproject.com/en/1.7/ref/contrib/gis/db-api/#mysql-spatial-limitations](django docs).  In the future ebextensions will be added to support mysql without spatial support in the future.
+The only fully supported db backend at this time is postgres / postgis using the psycopg2 driver. The problem is that MySQL does not support all spatial operations, see the [https://docs.djangoproject.com/en/1.7/ref/contrib/gis/db-api/#mysql-spatial-limitations](django docs).  In the future ebextensions will be added to support mysql without spatial support in the future.
 
 The current AMI the tool works with is ami-35792c5c. The yum packages often change, this being a legacy AMI, packages do come and go and the only way to freeze this is to create a custom AMI will all prerequisites installed. I will create such AMI in the near future and provide the ID.  Right now the ebextensions file installs all required packages as an instance is built.
 
 History
 -----
 
-The tool required  AWS Elastic Beanstalk command line tool (eb) and boto. It is now its own separate tool. The original tool it relied on is here:  https://github.com/radlws/AWS-ElasticBeanstalk-CLI
+The tool required  AWS Elastic Beanstalk command line tool (eb) and boto. It is now its own separate tool. The original tool it relied on is here:  https://github.com/radlws/AWS-ElasticBeanstalk-CLI. In the near future, the tool will be optimized to deploy with Docker.
 
 Usage
 -----
