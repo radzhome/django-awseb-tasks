@@ -98,6 +98,8 @@ Setting up your first Beanstalk
 
 6. Update your environment variables used in your settings.py file. You can edit them in your environment dashboard, Configuration -> Software Configuration
 
+7. For troubleshooting, pull the logs via the environment dashboard and see what errors occured if any.
+
 Example Usage
 ------------------
 
