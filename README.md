@@ -26,18 +26,16 @@ Installation
 
 Ensure the version of git you are using includes the points-at command, git 1.8+. See [Git Install](http://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
-### Install using pip
+### 1. Install using pip
 
     [sudo] pip install git+https://github.com/radlws/django-awseb-tasks.git
 
-### Alternatively, install somewhere on your PYTHONPATH i.e. in  ../lib
-
-This method will allow you to keep the module part of your repository.
+Alternatively, install somewhere on your PYTHONPATH i.e. in  ../lib. This method will allow you to keep the module part of your repository.
 
     cd ../lib
     pip install --target . -U git+https://github.com/radlws/django-awseb-tasks.git
 
-### Reference it in your fabfile.py
+### 2. Reference it in your fabfile.py
 
 First set the required environment variables in your fab file, then import the tasks
 
@@ -48,7 +46,7 @@ First set the required environment variables in your fab file, then import the t
     from awseb_fab_tasks import tasks as aws
 
 
-Usage
+Usage Overview
 -----
 
 ### Available commands
@@ -88,7 +86,17 @@ Setting up your first Beanstalk
 
 4. Create a new environment, i.e. staging, and follow the wizard, use these settings:
 
-* todo
+* Environment Tier: Web Server
+* Pre Defined Configuration: Python
+* Environment Type: Use Load Balanced for Production, Otherwise Single Instance is fine
+* Deploy with Sample Application on your first run
+* Environment name, for staging would be <your-project>-staging, URL anything that is available
+* Do not create an RDS in the beanstalk, provide an existing one. It will terminate the RDS if you terminate the environment. So unless you want that to happen. Provide your own RDS later.
+* Select micro instance and default SSH key
+
+5. Launch the environment. Now you can setup your RDS, deploy your code using fab aws.deploy. 
+
+6. Update your environment variables used in your settings.py file. You can edit them in your environment dashboard, Configuration -> Software Configuration
 
 Example Usage
 ------------------
