@@ -24,12 +24,12 @@ The current AMI the tool works with is ami-35792c5c. The yum packages often chan
 History
 -----
 
-The tool was inspired by  AWS Elastic Beanstalk command line tool (eb): https://github.com/radlws/AWS-ElasticBeanstalk-CLI.
+The tool was inspired by  AWS Elastic Beanstalk command line tool, see [eb](https://github.com/radlws/AWS-ElasticBeanstalk-CLI).
 
 Installation
 ------------------
 
-Ensure the version of git you are using includes the points-at command, git 1.8+. See [http://git-scm.com/book/en/v2/Getting-Started-Installing-Git](Git Installation).
+Ensure the version of git you are using includes the points-at command, git 1.8+. See [Git Install](http://git-scm.com/book/en/v2/Getting-Started-Installing-Git).
 
 ### Install using pip
 
