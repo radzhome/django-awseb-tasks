@@ -92,7 +92,20 @@ Usage
     STATICFILES_STORAGE = 'aws_tasks.storage_backends.StaticS3Storage'
     THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
 
- 
+
+Setting up your first Beanstalk
+------------------
+
+1. Login to (AWS)[http://aws.amazon.com], setup an account if you don't have one.
+
+2. Go to Beanstalk Console
+
+3. Create a new application, give it the same name as your django project.
+
+4. Create a new environment, i.e. staging, and follow the wizard, use these settings:
+
+* todo
+
 Example Usage
 ------------------
 
