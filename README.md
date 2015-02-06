@@ -66,6 +66,8 @@ Usage Overview
 * environment_status:<env-name> - returns the environment health and status
 
 
+TODO: eb_init -> automate db creation for RDS
+
 ### S3 Storage Backend
 
 (OPTIONAL) Using the S3 backend for media and static (requires storages install). Add this to your settings file:
