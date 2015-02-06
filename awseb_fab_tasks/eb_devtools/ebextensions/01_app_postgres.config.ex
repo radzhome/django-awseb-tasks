@@ -14,7 +14,10 @@ container_commands:
   01_collectstatic:
     command: 'PYTHONPATH=.:..:../lib cd site/{project} && ./manage.py collectstatic -c --noinput && cd ../..'
     leader_only: true
-  02_migrate:
+  02_syncdb:
+    command: 'PYTHONPATH=.:..:../lib cd site/{project} && ./manage.py syncdb --noinput && cd ../..'
+    leader_only: true
+  03_migrate:
     command: 'PYTHONPATH=.:..:../lib cd site/{project} && ./manage.py migrate --noinput && cd ../..'
     leader_only: true
 
