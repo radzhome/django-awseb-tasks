@@ -1,5 +1,16 @@
 TODO
 -----
+
+- UPDATE STACK to 2014.09 using these for postgis:
+
+ELGIS repo: sudo rpm -Uvh http://elgis.argeo.org/repos/6/elgis-release-6-6_0.noarch.rpm
+
+rpm -i ftp://ftp.pbone.net/mirror/ftp5.gwdg.de/pub/opensuse/repositories/home:/billcavalieri:/QEMU/RedHat_RHEL-6/x86_64/poppler-0.12.4-7.1.x86_64.rpm
+
+rpm -i ftp://ftp.muug.mb.ca/mirror/centos/6.6/os/x86_64/Packages/poppler-data-0.4.0-1.el6.noarch.rpm
+
+
+
 - sep. poll_env so can use it on other commands and sep.
 - combine collect static / migrate commands with deploy
 - logging (retrieve /var/log/* using fabric), ability to tail logs (see eb cli tool)
