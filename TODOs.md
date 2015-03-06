@@ -1,6 +1,8 @@
 TODO
 -----
 
+- create a spatial extension for db, write task that does this.
+
 - UPDATE STACK to 2014.09 using these for postgis:
 
 ELGIS repo: sudo rpm -Uvh http://elgis.argeo.org/repos/6/elgis-release-6-6_0.noarch.rpm
