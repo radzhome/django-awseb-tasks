@@ -379,11 +379,10 @@ def _get_instances_for_site(site_name):
 def leader(site_name):
     """ Returns ssh connection string to leader instance """
     insts = _get_instances_for_site(site_name)
-    lead = insts[0].dns_name
+    leader = insts[0].dns_name
     env.user = 'ec2-user'
-    print 'setting user+host: %s@%s' % (env.user, lead)
-    env.hosts = [lead]
-
+    print 'setting user+host: %s@%s' % (env.user, leader)
+    env.hosts = [leader]
 
 @task
 @args_required(('site_name', 'e.g. live, staging', 'staging'), )
