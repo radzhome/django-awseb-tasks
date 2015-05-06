@@ -577,7 +577,7 @@ def eb_init():  # The environment must exist, as must the tag
 
     import boto  # Try to import to verify installation
     boto_path = boto.__path__[0][:boto.__path__[0].rfind('/')]
-    boto_path_import = "import sys; sys.path.insert(0, '{}')".format(boto_path)
+    boto_path_import = "import sys; sys.path.insert(0, '{}')".format(boto_path) # Fail if boto found in wrong path
     new_creds()
     if not os.path.exists(_get_ebextensions_dir()):
         generate_app_config()
@@ -588,6 +588,7 @@ def eb_init():  # The environment must exist, as must the tag
         local('bash ' + sh_path)  # Run shell script that creates git aliases
     dev_tools_path = os.path.join(_get_git_root_dir(), '.git', 'AWSDevTools', 'aws', 'dev_tools.py')
     _line_prepend_to_file(dev_tools_path, boto_path_import)
+    print "Pre appended dev_tools with path to projects lib dir"
     print "Running 'git aws.config'..."
     with hide('running'):
         local('git aws.config')  # No need for now, asks for key again
