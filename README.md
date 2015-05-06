@@ -110,7 +110,7 @@ Assuming tasks are imported as aws. You can deploy, migrate and collectstatic li
     fab aws.deploy aws.leader aws.manage:migrate aws.manage:collectstatic
      
 Or just deploy, then later migrate and collectstatic
-    
+
     fab aws.deploy 
     fab aws.leader aws.manage:migrate aws.manage:collectstatic
     
