@@ -108,6 +108,11 @@ Example Usage
 Assuming tasks are imported as aws. You can deploy, migrate and collectstatic like this:
 
     fab aws.deploy aws.leader aws.manage:migrate aws.manage:collectstatic
+     
+Or just deploy, then later migrate and collectstatic
+    
+    fab aws.deploy 
+    fab aws.leader aws.manage:migrate aws.manage:collectstatic
     
 The 'leader' task stores the leader instance in env.hosts, manage makes an ssh connection which requires you use the correct ssh private key used to start the instance to connect to it. Make sure the ssh key is added to ssh agent so it gets picked up:
 
