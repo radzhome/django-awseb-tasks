@@ -548,6 +548,8 @@ def generate_app_config():  # generate_ebxconfig():
 
     print "Creating ebextensions..."
 
+    #TODO: needs update for 2014.09 stack +
+
     # Configure needed directories
     config_path = _get_ebextensions_dir()
     config_ex_path = os.path.join(EB_TASKS_BASE_PATH, 'eb_devtools/ebextensions/')
