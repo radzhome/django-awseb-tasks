@@ -270,6 +270,7 @@ def full_deploy(site_name, tag=None):  # The environment must exist, as must the
     
     deploy(site_name, tag)
     leader_dns = _get_instances_for_site(site_name)[0].dns_name
+    env.user = 'ec2-user'
     env.host_string = leader_dns
     manage('migrate')
     manage('collectstatic')
@@ -486,9 +487,7 @@ def new_creds():
     _copy_if_no_exists(project_boto_creds, master_boto_creds)
 
     print "Credentials file created."
-
-    # Automatically switch to the credentials for this project
-    sw_creds()
+    sw_creds()  # Automatically switch to the credentials for this project
 
 @task
 def sw_creds():
