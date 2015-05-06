@@ -405,6 +405,8 @@ def _run_cmd_in_python_container(command):
 @task
 def manage(command):
     """ Run a manage command remotely, need host that you can get from leader command. use appropriate cert """
+    
+    # TODO: make manage also run manage.py --fake-initial  (south error: no such option: --fake-initial)
     with cd('/opt/python/current/app/site/{0}/'.format(PROJECT_NAME)):
         _run_cmd_in_python_container('./manage.py %s' % command)
 
@@ -574,7 +576,6 @@ def eb_init():  # The environment must exist, as must the tag
     """
 
     #TODO: Copy the required files needed for beanstalk wsgi settings
-
     import boto  # Try to import to verify installation
     boto_path = boto.__path__[0][:boto.__path__[0].rfind('/')]
     boto_path_import = "import sys; sys.path.insert(0, '{}')".format(boto_path) # Fail if boto found in wrong path
