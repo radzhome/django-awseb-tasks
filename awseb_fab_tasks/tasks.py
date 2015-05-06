@@ -263,6 +263,23 @@ def update(site_name, version_label=None):
     ('site_name', 'e.g. live, staging', 'staging'),
     ('tag', 'e.g. {0}-0.0.1ALPHA'.format(PROJECT_NAME), 'develop'),
 )
+def full_deploy(site_name, tag=None):  # The environment must exist, as must the tag
+    """
+    Full Deploy a release to the specified AWS Elastic Beanstalk environment.
+    """
+    
+    deploy(site_name, tag)
+    leader_dns = _get_instances_for_site(site_name)[0].dns_name
+    env.host_string = leader_dns
+    manage('migrate')
+    manage('collectstatic')
+    
+    
+@task
+@args_required(
+    ('site_name', 'e.g. live, staging', 'staging'),
+    ('tag', 'e.g. {0}-0.0.1ALPHA'.format(PROJECT_NAME), 'develop'),
+)
 def deploy(site_name, tag=None):  # The environment must exist, as must the tag
     """
     Deploy a release to the specified AWS Elastic Beanstalk environment.
@@ -594,15 +611,26 @@ def eb_init():  # The environment must exist, as must the tag
         local('git aws.config')  # No need for now, asks for key again
 
 
-#TODO:
-def eb_restart():
-    #beanstalk.restart_app_server(environment_id=None, environment_name=None)
-    pass
+@task
+@args_required(('site_name', 'e.g. live, staging', 'staging'),)
+def eb_restart(site_name):  
+    """ Restarts app servers on all ec2-instances for that environment"""
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)
+    from boto.beanstalk.layer1 import Layer1
+    layer1 = Layer1()
+    layer1.restart_app_server(environment_name=environment)
+    
 
-#TODO
-def eb_rebuild():
-    # beanstalk.rebuild_environment(environment_id=None, environment_name=None)
-    pass
+# TODO: add safeguards before adding swap and rebuild
+#@task
+@args_required(('site_name', 'e.g. live, staging', 'staging'),)
+def eb_rebuild(site_name):
+    """ rebuild app servers , etc.. on all ec2-instances for that environment"""
+    environment = '{0}-{1}'.format(PROJECT_NAME, site_name)
+    from boto.beanstalk.layer1 import Layer1
+    layer1 = Layer1()
+    layer1.rebuild_environment(environment_name=environment)
+    
 
 #TODO:
 def eb_swap_cnames():
